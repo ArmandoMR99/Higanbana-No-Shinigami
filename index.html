@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Higanbana no Shinigami</title>
+  <meta name="description" content="Kenji y la flor de los muertos: una historia interactiva en 3D, en tres capítulos.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%9D%80%3C/text%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500&family=Shippori+Mincho+B1:wght@500;700;800&family=Zen+Old+Mincho:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "./vendor/three/three.module.min.js",
+        "three/addons/": "./vendor/three/addons/"
+      }
+    }
+  </script>
+</head>
+<body class="state-loading">
+  <canvas id="gl" aria-hidden="true"></canvas>
+  <div id="fade" aria-hidden="true"></div>
+
+  <!-- PORTADA -->
+  <section id="intro" aria-label="Portada">
+    <h1 class="title">
+      <span class="title-jp" lang="ja">彼岸花の死神</span>
+      <span class="title-es">Higanbana no Shinigami</span>
+    </h1>
+    <p class="enter">haz clic para entrar</p>
+  </section>
+
+  <!-- Trazos de tinta: caen del título y se vuelven las divisiones del menú -->
+  <div id="strokes" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+
+  <!-- MENÚ DE CAPÍTULOS -->
+  <nav id="menu" aria-label="Capítulos"></nav>
+
+  <!-- LECTOR -->
+  <main id="reader" aria-live="polite"></main>
+  <div id="labels" aria-hidden="false"></div>
+
+  <div id="hud">
+    <button id="btn-esc" class="hud-btn" title="Volver al menú (Esc)">Esc</button>
+    <div id="chapter-tag"></div>
+    <button id="btn-bestias" class="hud-btn" title="Modo Bestias" lang="ja">鬼</button>
+    <ol id="progress" aria-label="Progreso del capítulo"></ol>
+    <p id="hint"></p>
+    <div id="forge-list"></div>
+  </div>
+
+  <!-- Tarjetas: ema de barrio y ficha de bestia -->
+  <div id="card" role="dialog" aria-modal="false" hidden>
+    <button class="card-close" aria-label="Cerrar">×</button>
+    <div class="card-body"></div>
+  </div>
+
+  <div id="cursor" aria-hidden="true"></div>
+
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <filter id="rough"><feTurbulence type="fractalNoise" baseFrequency="0.04 0.9" numOctaves="2" seed="3"/><feDisplacementMap in="SourceGraphic" scale="9"/></filter>
+  </svg>
+
+  <noscript><p class="noscript">Esta historia necesita JavaScript y WebGL.</p></noscript>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
