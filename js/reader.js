@@ -14,7 +14,8 @@ export class Reader {
     this.progressEl = document.getElementById('progress');
     this.hintEl = document.getElementById('hint');
     this.current = -1;
-    el.addEventListener('scroll', () => this.measure(), { passive: true });
+    el.addEventListener('scroll', () => { this.measure(); clearTimeout(this._idle); this._idle = setTimeout(() => this.settle(), 160); }, { passive: true });
+    el.addEventListener('scrollend', () => { clearTimeout(this._idle); this.settle(); });
     addEventListener('resize', () => this.layout());
   }
 
@@ -43,6 +44,11 @@ export class Reader {
             <button data-go="menu"><small>Esc</small>Volver a los capítulos</button>
           </div></div>`;
         sec.querySelectorAll('button').forEach((b) => b.addEventListener('click', () => this.onEnd && this.onEnd(b.dataset.go)));
+      } else if (s.len > 1 && s.paras.length > 2) {
+        // pasaje largo: el texto se muestra por páginas que se funden una en otra
+        const pages = []; for (let k = 0; k < s.paras.length; k += 2) pages.push(s.paras.slice(k, k + 2));
+        sec.innerHTML = `<div class="scroll paged"><div class="pages">${pages.map((pg, k) => `<div class="page${k ? '' : ' on'}">${pg.map((p) => `<p>${p}</p>`).join('')}</div>`).join('')}</div></div>`;
+        s.pages = [...sec.querySelectorAll('.page')];
       } else {
         sec.innerHTML = `<div class="scroll">${s.paras.map((p) => `<p>${p}</p>`).join('')}</div>`;
       }
@@ -84,12 +90,12 @@ export class Reader {
       const vis = y + innerHeight * 0.6 > S[k].top && y < S[k].top + S[k].h - innerHeight * 0.2;
       if (vis) S[k].el.classList.add('seen');
     }
-    // en pasajes largos, los párrafos se revelan por partes (solo quedan los dos últimos)
+    // en pasajes largos, una página de texto por tramo del scroll
     const cur = S[i];
-    if (cur.len > 1 && cur.paras && cur.paras.length > 2) {
-      const ps = cur.el.querySelectorAll('.scroll p');
-      const k = Math.min(ps.length - 1, Math.floor(t * (ps.length + 0.4)));
-      ps.forEach((p, n) => { p.classList.toggle('off', n > k || n < k - 1); });
+    if (cur.pages) {
+      const n = cur.pages.length, tIn = Math.min(1, t * cur.len / (cur.len - 0.6));
+      const k = Math.min(n - 1, Math.floor(tIn * n));
+      cur.pages.forEach((pg, j) => pg.classList.toggle('on', j === k));
     }
     if (i !== this.current) {
       this.current = i;
@@ -103,6 +109,18 @@ export class Reader {
     }
   }
 
+  // ajuste suave: al soltar el scroll, se acomoda en el pasaje más cercano (sin saltos bruscos)
+  settle() {
+    const S = this.sections; if (!S.length) return;
+    const y = this.el.scrollTop, vh = innerHeight, s = S[this.i];
+    const d = y - s.top;
+    let target = null;
+    if (s.len === 1) target = d < s.h * 0.5 ? s.top : s.top + s.h;
+    else if (d > s.h - vh) target = d - (s.h - vh) < vh * 0.5 ? s.top + s.h - vh : s.top + s.h;
+    if (target === null) return;
+    target = Math.min(target, this.el.scrollHeight - vh);
+    if (Math.abs(target - y) > 2) this.el.scrollTo({ top: target, behavior: 'smooth' });
+  }
   goTo(i) { this.el.scrollTo({ top: this.sections[i].top, behavior: 'smooth' }); }
   next() {
     const s = this.sections[this.i];

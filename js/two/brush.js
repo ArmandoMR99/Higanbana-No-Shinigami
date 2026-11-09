@@ -212,51 +212,95 @@ export function lily(ctx, x, y, s = 1, { color = '#b3121b', stem = 160, seed = 3
 }
 
 // ---------- siluetas ----------
-// Kenji / persona: silueta de tinta con kimono y hakama. dir = 1 mira a la derecha.
-export function figure(ctx, x, y, h, { color = C.ink(0.95), rim = C.boneA(0.35), dir = 1, kneel = false, hat = false, staff = false, mark = false, hair = true, lean = 0 } = {}) {
-  const s = h / 170;
-  ctx.save(); ctx.translate(x, y); ctx.scale(dir * s, s); ctx.rotate(lean);
-  ctx.fillStyle = color;
-  const P = new Path2D();
-  let top;
-  if (kneel) {
-    // seiza: piernas dobladas, base ancha
-    top = -96;
-    P.moveTo(-38, 0); P.quadraticCurveTo(-46, -14, -30, -24); P.bezierCurveTo(-26, -46, -22, -70, -18, top + 6);
-    P.quadraticCurveTo(-14, top - 2, -6, top - 4); P.lineTo(8, top - 4); P.quadraticCurveTo(18, top - 2, 20, top + 6);
-    P.bezierCurveTo(24, -70, 30, -50, 34, -30); P.quadraticCurveTo(54, -20, 52, 0); P.closePath();
-  } else {
-    top = -132;
-    // hakama con la abertura entre las piernas
-    P.moveTo(-30, 0); P.bezierCurveTo(-26, -24, -22, -52, -19, -74); P.lineTo(-17, top + 22);
-    P.quadraticCurveTo(-18, top + 6, -10, top + 2); P.lineTo(10, top + 2); P.quadraticCurveTo(18, top + 6, 17, top + 22);
-    P.lineTo(19, -74); P.bezierCurveTo(22, -52, 26, -24, 32, 0); P.lineTo(6, 0); P.lineTo(2, -38); P.lineTo(-2, 0); P.closePath();
+// ---------- personajes: siluetas trazadas a mano (caja de 200 de alto, pies en y=200, mirando a la derecha) ----------
+const PATHS = {
+  head: 'M5 10 C-5 10 -10 18 -9 27 C-8 34 -3 39 3 40 L3 46 L12 46 L12 38 C16 35 19 31 20 28 L22 26 L19 23 C18 15 13 10 5 10 Z',
+  hair: 'M-10 25 C-13 14 -7 5 4 4 C9 1 15 3 18 8 C21 11 21 16 20 20 L17 15 L14 18 L11 13 L7 17 L3 12 L-1 17 C-3 19 -5 23 -6 28 Z M-9 26 C-16 27 -20 32 -22 39 C-17 36 -13 35 -9 33 Z',
+  topknot: 'M-9 24 C-11 14 -5 7 5 7 C12 7 18 11 19 18 C14 14 6 13 -2 16 Z M-2 8 C-4 2 2 -2 7 1 C9 3 9 6 7 8 Z',
+  bun: 'M-9 25 C-12 14 -6 6 5 6 C13 6 19 12 19 19 C12 15 4 15 -3 18 Z M-12 18 C-20 16 -22 26 -16 30 C-12 31 -10 27 -11 23 Z',
+  body: 'M-16 47 C-8 44 13 43 21 47 C23 62 22 78 21 92 C27 122 31 162 37 196 L12 198 L6 152 L1 198 L-27 196 C-25 160 -22 122 -19 92 C-20 78 -19 62 -16 47 Z',
+  sleeves: 'M-15 48 C-24 58 -28 82 -26 106 C-20 110 -12 109 -8 104 L-10 60 Z M20 48 C30 57 34 80 33 102 C27 107 19 106 15 101 L16 62 Z M27 103 C31 103 33 107 31 111 C27 113 24 110 25 106 Z',
+  feet: 'M-29 196 L-6 196 L-5 200 L-31 200 Z M11 196 L38 196 L40 200 L9 200 Z',
+  folds: 'M-7 97 L-13 193 M4 99 L4 150 M13 97 L22 193 M-18 88 L21 88 M-18 95 L21 95 M-3 47 L5 66 L13 47 M-6 62 L-9 100 M24 62 L27 98',
+  walkBody: 'M-16 47 C-8 44 13 43 21 47 C23 62 22 78 21 92 C32 120 42 158 50 194 L26 198 L8 146 L-12 198 L-36 193 C-28 158 -22 122 -19 92 C-20 78 -19 62 -16 47 Z',
+  walkSleeves: 'M-15 48 C-28 56 -36 78 -38 98 C-31 104 -24 102 -20 97 L-12 62 Z M20 48 C34 54 42 74 44 94 C38 100 30 99 27 94 L17 62 Z',
+  walkFeet: 'M-38 192 L-14 196 L-15 200 L-40 197 Z M26 196 L52 194 L54 199 L25 200 Z',
+  walkFolds: 'M-6 97 L-21 191 M6 99 L8 144 M14 97 L37 191 M-18 88 L21 88 M-18 95 L21 95 M-3 47 L5 66 L13 47',
+  kneelBody: 'M-15 119 C-7 116 13 115 21 119 C23 133 23 148 22 160 C32 166 44 180 46 196 L46 200 L-30 200 C-36 190 -32 175 -23 166 C-20 150 -18 133 -15 119 Z',
+  kneelSleeves: 'M-15 120 C-24 130 -26 150 -22 168 C-16 171 -9 170 -6 166 L-8 132 Z M20 120 C27 130 33 147 42 162 C37 169 27 170 21 166 L17 134 Z M40 161 C45 161 48 165 46 169 C42 171 39 169 38 166 Z',
+  kneelFolds: 'M-20 158 L23 158 M-20 164 L24 164 M-3 119 L5 136 L13 119 M2 176 L40 188 M-14 178 L-24 196',
+  mother: 'M-15 47 C-7 44 12 43 19 47 C21 70 20 100 22 130 C24 160 26 180 28 198 L-22 198 C-20 180 -19 160 -18 130 C-17 100 -18 70 -15 47 Z',
+  motherFolds: 'M-17 84 L20 84 M-17 94 L20 94 M2 100 L6 196 M-3 47 L5 66 L13 47',
+  hat: 'M-36 30 C-22 20 -4 10 7 8 C20 10 36 20 50 30 C32 35 -18 35 -36 30 Z',
+  roninHead: 'M1 30 C-5 32 -8 40 -6 47 C-4 52 1 54 6 54 L6 58 L15 58 L15 50 C19 47 21 41 21 37 L23 35 L20 32 Z',
+  cloak: 'M-21 58 C-8 54 18 54 27 58 C35 92 41 140 45 196 L-31 196 C-29 140 -27 92 -21 58 Z',
+  roninArm: 'M25 60 C35 68 42 84 43 98 L35 104 L28 76 Z M38 98 C43 98 45 102 43 106 C39 108 36 105 37 101 Z',
+  katana: 'M-30 114 L30 101 L31 104 L-29 117 Z M31 101 L44 98 L45 101 L32 104 Z',
+  roninFeet: 'M-30 196 L-8 196 L-8 200 L-31 200 Z M14 196 L40 196 L41 200 L13 200 Z',
+  roninFolds: 'M-8 72 L-15 194 M9 72 L13 194 M24 72 L35 194 M-21 62 L27 62',
+  oni: 'M2 6 C-8 6 -14 14 -14 24 L-24 8 L-20 28 C-22 34 -20 40 -16 44 C-36 50 -50 70 -50 104 L-40 110 C-38 94 -34 84 -30 80 C-30 112 -32 150 -36 196 L-8 196 L-2 150 L4 196 L32 196 C28 150 26 112 26 80 C30 84 36 94 38 110 L48 104 C48 70 34 50 16 44 C20 40 22 34 20 28 L26 8 L16 24 C16 14 12 6 2 6 Z',
+};
+const P2D = {};
+const path = (k) => (P2D[k] ||= new Path2D(PATHS[k]));
+
+// pose: 'stand' | 'walk' | 'kneel'  ·  who: 'kenji' | 'father' | 'mother' | 'ronin' | 'oni'
+export function figure(ctx, x, y, h, o = {}) {
+  let { color = C.ink(0.95), rim = C.boneA(0.4), dir = 1, pose = 'stand', who = 'kenji', mark = false, lean = 0 } = o;
+  if (o.kneel) pose = 'kneel';
+  if (o.hat || o.staff) who = 'ronin';
+  const s = h / 200;
+  ctx.save(); ctx.translate(x, y); ctx.scale(dir * s, s); ctx.rotate(lean); ctx.translate(0, -200);
+  const parts = [], folds = [];
+  let dy = 0;
+  if (who === 'ronin') { parts.push('cloak', 'roninArm', 'roninFeet', 'roninHead', 'hat', 'katana'); folds.push('roninFolds'); }
+  else if (who === 'oni') { parts.push('oni'); }
+  else {
+    if (pose === 'kneel') { dy = 72; parts.push('kneelBody', 'kneelSleeves'); folds.push('kneelFolds'); }
+    else if (pose === 'walk') { parts.push('walkBody', 'walkSleeves', 'walkFeet'); folds.push('walkFolds'); }
+    else if (who === 'mother') { parts.push('mother', 'sleeves'); folds.push('motherFolds'); }
+    else { parts.push('body', 'sleeves', 'feet'); folds.push('folds'); }
   }
-  ctx.fill(P);
-  // mangas anchas
-  const S = new Path2D();
-  S.moveTo(12, top + 6); S.bezierCurveTo(30, top + 14, 34, top + 40, 30, top + 64); S.quadraticCurveTo(22, top + 70, 14, top + 62); S.lineTo(15, top + 24); S.closePath();
-  S.moveTo(-12, top + 6); S.bezierCurveTo(-30, top + 16, -33, top + 42, -28, top + 66); S.quadraticCurveTo(-20, top + 71, -13, top + 62); S.lineTo(-15, top + 24); S.closePath();
-  ctx.fill(S);
-  // cuello, cabeza y pelo
-  ctx.beginPath(); ctx.moveTo(-5, top + 3); ctx.lineTo(-4, top - 8); ctx.lineTo(5, top - 8); ctx.lineTo(6, top + 3); ctx.fill();
-  ctx.beginPath(); ctx.ellipse(1, top - 20, 11.5, 13.5, 0.05, 0, Math.PI * 2); ctx.fill();
-  if (hair) { ctx.beginPath(); ctx.moveTo(-12, top - 18); ctx.quadraticCurveTo(-16, top - 36, -2, top - 36); ctx.lineTo(4, top - 44); ctx.lineTo(7, top - 35); ctx.quadraticCurveTo(15, top - 33, 13, top - 20); ctx.lineTo(9, top - 27); ctx.lineTo(3, top - 24); ctx.lineTo(-4, top - 28); ctx.closePath(); ctx.fill(); }
-  if (hat) { ctx.beginPath(); ctx.moveTo(-36, top - 18); ctx.quadraticCurveTo(1, top - 58, 38, top - 18); ctx.quadraticCurveTo(1, top - 26, -36, top - 18); ctx.fill(); }
-  if (staff) { ctx.save(); ctx.translate(30, top + 40); ctx.rotate(-0.05); ctx.fillRect(-1.7, -60, 3.4, (kneel ? 60 : 92) + 60); ctx.restore(); }
-  // obi (faja) y borde de luz
+  ctx.fillStyle = color;
+  for (const k of parts) ctx.fill(path(k));
+  if (who !== 'ronin' && who !== 'oni') {
+    ctx.save(); ctx.translate(0, dy); ctx.fill(path('head')); ctx.fill(path(who === 'father' ? 'topknot' : who === 'mother' ? 'bun' : 'hair')); ctx.restore();
+  }
+  if (who === 'ronin') { ctx.fillRect(43, 30, 3.4, 170); }
   if (rim) {
-    ctx.strokeStyle = rim; ctx.lineWidth = 1.3 / s; ctx.stroke(P); ctx.stroke(S);
-    ctx.beginPath(); ctx.ellipse(1, top - 20, 11.5, 13.5, 0.05, 0, Math.PI * 2); ctx.stroke();
-    ctx.globalAlpha = 0.5; ctx.beginPath(); ctx.moveTo(-17, top + 40); ctx.lineTo(18, top + 40); ctx.moveTo(-17, top + 46); ctx.lineTo(18, top + 46); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(-8, top + 4); ctx.lineTo(3, top + 26); ctx.lineTo(9, top + 4); ctx.stroke(); ctx.globalAlpha = 1;
+    ctx.strokeStyle = rim; ctx.lineWidth = 1.2 / s; ctx.lineJoin = 'round';
+    for (const k of parts) ctx.stroke(path(k));
+    if (who !== 'ronin' && who !== 'oni') { ctx.save(); ctx.translate(0, dy); ctx.stroke(path('head')); ctx.restore(); }
+    ctx.globalAlpha = 0.45; ctx.lineWidth = 0.9 / s;
+    for (const k of folds) ctx.stroke(path(k));
+    if (who === 'ronin') { ctx.globalAlpha = 0.9; ctx.lineWidth = 2.6; ctx.beginPath(); ctx.moveTo(-5, 42); ctx.lineTo(22, 39); ctx.stroke(); }
+    ctx.globalAlpha = 1;
   }
   if (mark) {
-    const g = ctx.createRadialGradient(7, top - 4, 0, 7, top - 4, 13);
-    g.addColorStop(0, 'rgba(255,70,70,1)'); g.addColorStop(0.35, 'rgba(210,20,30,0.85)'); g.addColorStop(1, 'rgba(200,20,30,0)');
-    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(7, top - 4, 13, 0, Math.PI * 2); ctx.fill();
+    const mx = 9, my = 40 + dy;
+    const g = ctx.createRadialGradient(mx, my, 0, mx, my, 14);
+    g.addColorStop(0, 'rgba(255,80,80,1)'); g.addColorStop(0.3, 'rgba(215,22,32,0.9)'); g.addColorStop(1, 'rgba(200,20,30,0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(mx, my, 14, 0, Math.PI * 2); ctx.fill();
   }
   ctx.restore();
+}
+// punto del cuello (la marca) y de la mano delantera, en coordenadas de la escena
+export function figurePoint(x, y, h, { dir = 1, pose = 'stand' } = {}, which = 'mark') {
+  const s = h / 200, dy = pose === 'kneel' ? 72 : 0;
+  const p = which === 'mark' ? [9, 40 + dy] : pose === 'kneel' ? [44, 165] : pose === 'walk' ? [42, 96] : [29, 107];
+  return [x + dir * p[0] * s, y + (p[1] - 200) * s];
+}
+
+// ---------- caché de sprites: lo costoso se dibuja una vez ----------
+const SPR = {};
+export function cached(key, w, h, draw, scale = 2) {
+  if (SPR[key]) return SPR[key];
+  const c = document.createElement('canvas'); c.width = Math.ceil(w * scale); c.height = Math.ceil(h * scale);
+  const g = c.getContext('2d'); g.scale(scale, scale); draw(g, w, h);
+  c.w = w; c.h = h;
+  return (SPR[key] = c);
+}
+export function stamp(ctx, spr, x, y, s = 1, ang = 0, ax = 0.5, ay = 0.5) {
+  ctx.save(); ctx.translate(x, y); if (ang) ctx.rotate(ang); ctx.drawImage(spr, -spr.w * s * ax, -spr.h * s * ay, spr.w * s, spr.h * s); ctx.restore();
 }
 
 // casa japonesa vista de frente/arriba (para mapas y aldeas)
@@ -335,27 +379,74 @@ export function weapon2d(ctx, x, y, s = 1, { alpha = 1 } = {}) {
   ctx.restore();
 }
 
-// iconos de criaturas en tinta (para el mapa y el ensō)
-export function creature(ctx, type, x, y, s = 1, { alpha = 1, color = C.bone, hi = false, ang = 0 } = {}) {
-  ctx.save(); ctx.translate(x, y); ctx.rotate(ang); ctx.scale(s, s); ctx.globalAlpha = alpha;
-  const col = hi ? '#e0303a' : color;
+// criaturas: dibujadas una vez con detalle y estampadas (rápido en cada cuadro)
+function drawCreature(g, type, col, hi) {
   if (type === 'dragon') {
-    brush(ctx, [[-22, 4], [-10, -6], [2, 5], [14, -4], [24, 0]], { w: 6, color: col, profile: 'end', dry: 0.2, seed: 5, n: 24 });
-    brush(ctx, [[0, 0], [-4, -14], [10, -18]], { w: 3, color: col, alpha: 0.7, profile: 'start', dry: 0.3, seed: 6, n: 8 });
-    brush(ctx, [[0, 2], [-6, 14], [8, 18]], { w: 3, color: col, alpha: 0.7, profile: 'start', dry: 0.3, seed: 7, n: 8 });
+    // serpiente de hueso: cuerpo ondulado que se afina, cresta de púas, cabeza con cuernos
+    const pts = []; for (let i = 0; i <= 40; i++) { const t = i / 40; pts.push([12 + t * 96, 32 + Math.sin(t * Math.PI * 2.2) * 10 * (0.4 + t * 0.6)]); }
+    const W = (t) => 7.5 * (1 - t) ** 0.8 + 1;
+    const L = [], R = [];
+    pts.forEach((p, i) => { const a = pts[Math.max(0, i - 1)], b = pts[Math.min(40, i + 1)]; let nx = -(b[1] - a[1]), ny = b[0] - a[0]; const l = Math.hypot(nx, ny); nx /= l; ny /= l; const w = W(i / 40); L.push([p[0] + nx * w, p[1] + ny * w, nx, ny]); R.push([p[0] - nx * w, p[1] - ny * w]); });
+    g.fillStyle = hi ? '#c8141e' : '#d9d2c6';
+    g.beginPath(); L.forEach((p, i) => (i ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1]))); for (let i = R.length - 1; i >= 0; i--) g.lineTo(R[i][0], R[i][1]); g.closePath(); g.fill();
+    g.strokeStyle = 'rgba(10,8,8,0.9)'; g.lineWidth = 1.1; g.stroke();
+    // escamas: anillos
+    g.strokeStyle = 'rgba(10,8,8,0.45)'; g.lineWidth = 0.7; for (let i = 3; i < 38; i += 2) { g.beginPath(); g.moveTo(L[i][0], L[i][1]); g.lineTo(R[i][0], R[i][1]); g.stroke(); }
+    // púas del lomo
+    g.fillStyle = hi ? '#7a0c12' : '#2a2321';
+    for (let i = 4; i < 36; i += 3) { const p = L[i]; g.beginPath(); g.moveTo(p[0] - 2, p[1]); g.lineTo(p[0] + p[2] * 6, p[1] + p[3] * 6); g.lineTo(p[0] + 2, p[1]); g.fill(); }
+    // garras
+    for (const i of [8, 22]) { const p = R[i]; g.strokeStyle = g.fillStyle; g.lineWidth = 1.6; g.beginPath(); g.moveTo(p[0], p[1]); g.lineTo(p[0] - 3, p[1] + 7); g.lineTo(p[0] + 1, p[1] + 9); g.stroke(); }
+    // cabeza
+    const h = pts[0];
+    g.fillStyle = hi ? '#c8141e' : '#e6dfd3'; g.beginPath(); g.moveTo(h[0] + 4, h[1] - 7); g.quadraticCurveTo(h[0] - 10, h[1] - 6, h[0] - 12, h[1]); g.quadraticCurveTo(h[0] - 8, h[1] + 7, h[0] + 4, h[1] + 7); g.closePath(); g.fill(); g.strokeStyle = 'rgba(10,8,8,0.9)'; g.lineWidth = 1; g.stroke();
+    g.strokeStyle = '#2a2321'; g.lineWidth = 1.6; g.beginPath(); g.moveTo(h[0] + 2, h[1] - 6); g.quadraticCurveTo(h[0] + 8, h[1] - 14, h[0] + 14, h[1] - 13); g.moveTo(h[0], h[1] - 6); g.quadraticCurveTo(h[0] + 3, h[1] - 16, h[0] + 9, h[1] - 18); g.stroke();
+    g.fillStyle = '#e0303a'; g.beginPath(); g.arc(h[0] - 4, h[1] - 2, 1.4, 0, 7); g.fill();
   } else if (type === 'oni') {
-    ctx.fillStyle = hi ? col : C.boneA(0.85); ctx.beginPath(); ctx.ellipse(0, 2, 6, 9, 0, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.moveTo(-4, -6); ctx.lineTo(-6, -13); ctx.lineTo(-1, -7); ctx.moveTo(4, -6); ctx.lineTo(6, -13); ctx.lineTo(1, -7); ctx.fill();
-    const g = ctx.createRadialGradient(10, -6, 0, 10, -6, 9); g.addColorStop(0, 'rgba(150,185,255,1)'); g.addColorStop(0.4, 'rgba(74,123,255,0.8)'); g.addColorStop(1, 'rgba(74,123,255,0)');
-    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(10, -6, 9, 0, Math.PI * 2); ctx.fill();
+    g.save(); g.translate(30, 2); g.scale(0.26, 0.26); g.fillStyle = hi ? '#c8141e' : '#cfc8bd'; g.fill(path('oni')); g.strokeStyle = 'rgba(10,8,8,0.9)'; g.lineWidth = 4; g.stroke(path('oni')); g.restore();
+    g.fillStyle = '#5a4a40'; g.save(); g.translate(44, 30); g.rotate(-0.5); g.fillRect(-2, -18, 4, 22); g.restore();
+    const fg = g.createRadialGradient(18, 22, 0, 18, 22, 12); fg.addColorStop(0, 'rgba(190,215,255,1)'); fg.addColorStop(0.35, 'rgba(74,123,255,0.85)'); fg.addColorStop(1, 'rgba(74,123,255,0)');
+    g.fillStyle = fg; g.beginPath(); g.arc(18, 22, 12, 0, 7); g.fill();
   } else if (type === 'yokai') {
-    const g = ctx.createRadialGradient(0, -2, 0, 0, 0, 13); g.addColorStop(0, hi ? 'rgba(224,48,58,0.8)' : 'rgba(225,220,212,0.6)'); g.addColorStop(1, 'rgba(225,220,212,0)');
-    ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(0, 0, 9, 13, 0, 0, Math.PI * 2); ctx.fill();
-    brush(ctx, [[0, 6], [-4, 14], [3, 22]], { w: 4, color: col, alpha: 0.4, profile: 'start', dry: 0.5, seed: 8, n: 8 });
-    ctx.fillStyle = '#e0303a'; ctx.beginPath(); ctx.arc(-2.5, -2, 1.3, 0, 7); ctx.arc(2.5, -2, 1.3, 0, 7); ctx.fill();
+    const gg = g.createRadialGradient(30, 22, 0, 30, 24, 22); gg.addColorStop(0, hi ? 'rgba(224,48,58,0.85)' : 'rgba(235,230,222,0.75)'); gg.addColorStop(0.6, hi ? 'rgba(160,20,30,0.4)' : 'rgba(210,205,198,0.3)'); gg.addColorStop(1, 'rgba(0,0,0,0)');
+    g.fillStyle = gg; g.beginPath(); g.moveTo(30, 6); g.bezierCurveTo(44, 6, 46, 24, 42, 34); g.quadraticCurveTo(38, 44, 32, 52); g.quadraticCurveTo(30, 40, 22, 44); g.quadraticCurveTo(26, 36, 18, 34); g.bezierCurveTo(14, 22, 18, 6, 30, 6); g.fill();
+    g.strokeStyle = 'rgba(235,230,222,0.5)'; g.lineWidth = 0.8; g.stroke();
+    g.fillStyle = '#e0303a'; g.beginPath(); g.ellipse(26, 20, 2, 1.4, 0.2, 0, 7); g.ellipse(34, 20, 2, 1.4, -0.2, 0, 7); g.fill();
   } else {
-    ctx.fillStyle = hi ? col : 'rgba(150,155,150,0.9)'; ctx.beginPath(); ctx.ellipse(0, 0, 8, 6, 0, 0, Math.PI * 2); ctx.fill();
-    ctx.strokeStyle = C.boneA(0.8); ctx.lineWidth = 1; ctx.beginPath(); ctx.ellipse(0, -5, 3.5, 1.6, 0, 0, Math.PI * 2); ctx.stroke();
+    // kappa visto desde arriba: caparazón con placas, cabeza con el plato de agua
+    g.fillStyle = hi ? '#c8141e' : '#8d938c'; g.beginPath(); g.ellipse(30, 26, 15, 12, 0, 0, 7); g.fill(); g.strokeStyle = 'rgba(10,8,8,0.9)'; g.lineWidth = 1; g.stroke();
+    g.strokeStyle = 'rgba(10,8,8,0.5)'; g.lineWidth = 0.8; g.beginPath(); g.moveTo(30, 15); g.lineTo(30, 37); g.moveTo(17, 26); g.lineTo(43, 26); g.ellipse(30, 26, 7, 6, 0, 0, 7); g.stroke();
+    g.fillStyle = hi ? '#c8141e' : '#a7ada5'; g.beginPath(); g.arc(48, 24, 6, 0, 7); g.fill(); g.stroke();
+    g.fillStyle = '#e6e0d6'; g.beginPath(); g.ellipse(48, 22, 3.6, 2.2, 0, 0, 7); g.fill();
+    for (const [x, y] of [[18, 16], [18, 36], [40, 15], [40, 37]]) { g.fillStyle = hi ? '#7a0c12' : '#6c726b'; g.beginPath(); g.ellipse(x, y, 3.4, 2.2, 0.6, 0, 7); g.fill(); }
   }
+}
+const CBOX = { dragon: [120, 64], oni: [60, 56], yokai: [60, 56], kappa: [60, 52] };
+export function creatureSprite(type, hi = false) { const [w, h] = CBOX[type]; return cached(`cr-${type}-${hi}`, w, h, (g) => drawCreature(g, type, null, hi), 3); }
+export function creature(ctx, type, x, y, s = 1, { alpha = 1, hi = false, ang = 0 } = {}) {
+  const spr = creatureSprite(type, hi);
+  const k = type === 'dragon' ? 0.42 : 0.5;
+  ctx.save(); ctx.globalAlpha *= alpha; stamp(ctx, spr, x, y, s * k, ang); ctx.restore();
+}
+
+// ---------- gráficas: un mismo estilo de tarjeta para todas ----------
+export function chartCard(ctx, x, y, w, h, title, sub = '') {
+  ctx.save();
+  ctx.fillStyle = 'rgba(11,8,8,0.84)'; ctx.fillRect(x, y, w, h);
+  ctx.strokeStyle = C.boneA(0.22); ctx.lineWidth = 1; ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
+  ctx.strokeStyle = C.boneA(0.1); ctx.strokeRect(x + 5.5, y + 5.5, w - 11, h - 11);
+  ctx.strokeStyle = 'rgba(200,24,34,0.85)'; ctx.lineWidth = 2;
+  const k = 12; ctx.beginPath(); ctx.moveTo(x, y + k); ctx.lineTo(x, y); ctx.lineTo(x + k, y); ctx.moveTo(x + w - k, y + h); ctx.lineTo(x + w, y + h); ctx.lineTo(x + w, y + h - k); ctx.stroke();
+  ctx.fillStyle = '#efe9e1'; ctx.font = '600 15px "Shippori Mincho B1", serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+  ctx.fillText(title, x + 18, y + 28);
+  if (sub) { ctx.fillStyle = C.boneA(0.5); ctx.font = '500 9.5px "IBM Plex Sans", sans-serif'; if ('letterSpacing' in ctx) ctx.letterSpacing = '1.5px'; ctx.fillText(sub.toUpperCase(), x + 18, y + 44); if ('letterSpacing' in ctx) ctx.letterSpacing = '0px'; }
   ctx.restore();
 }
+export function axisLabel(ctx, text, x, y, align = 'center') {
+  ctx.save(); ctx.fillStyle = C.boneA(0.55); ctx.font = '500 10px "IBM Plex Sans", sans-serif'; ctx.textAlign = align; ctx.fillText(text, x, y); ctx.restore();
+}
+
+// la kusarigama y el lirio como sprites (para dibujarlos en cada cuadro sin costo)
+export const weaponSprite = () => cached('weapon2d', 240, 500, (g) => weapon2d(g, 40, 200, 1), 2);
+export function weaponAt(ctx, x, y, s = 1, ang = 0, alpha = 1) { ctx.save(); ctx.globalAlpha *= alpha; stamp(ctx, weaponSprite(), x, y, s, ang, 40 / 240, 200 / 500); ctx.restore(); }
+export const lilySprite = (sc = 0.4) => cached('lily-' + sc, 240 * sc, 200 * sc, (g) => lily(g, 120 * sc, 110 * sc, sc, { stem: 0, seed: 6 }), 3);

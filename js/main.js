@@ -76,6 +76,7 @@ let mode = 'intro', chapter = 0, hover = 0;
 const cam = { pos: new THREE.Vector3(...lily.frames.menu.pos), look: new THREE.Vector3(...lily.frames.menu.look), shift: 0 };
 let active3d = lily;
 let fly = null;
+const arrive = { i: -1, ch: 0, time: 0 };
 
 function set3d(sc) {
   if (active3d === sc) return;
@@ -209,15 +210,20 @@ function loop() {
     if (mode === 'menu') fxT = { petals: 0.15 };
   } else {
     const S = reader.sections, i = reader.i, t = reader.t;
+    if (arrive.i !== i || arrive.ch !== chapter) { arrive.i = i; arrive.ch = chapter; arrive.time = time; }
+    const tp = clamp((time - arrive.time - 0.35) / 4.2); // animación que se reproduce sola al llegar al pasaje
     const A = S[i], B = S[i + 1] || A, L = A.len || 1;
     const k = L > 1 ? clamp(t * L - (L - 1)) : t;
     const e = smooth(clamp(k));
     const sa = SPEC[chapter][A.key] || {}, sb = SPEC[chapter][B.key] || sa;
     const same = (sa.v && sa.v === sb.v) || (sa.s && sa.s === sb.s);
-    const wa = same ? 1 : 1 - e, wb = same ? 0 : e;
+    // transición: la escena que sale se funde a tinta y luego entra la siguiente (sin mezclar dos gráficas)
+    const wa = same ? 1 : 1 - smooth(clamp((k - 0.18) / 0.36)), wb = same ? 0 : smooth(clamp((k - 0.46) / 0.36));
+    const scales = {};
     const views = {};
-    if (sa.v) { weights[sa.v] = (weights[sa.v] || 0) + wa; views[sa.v] = { key: A.key, ...viewParams(chapter, A.key, t, L) }; }
-    if (sb.v && wb > 0) { weights[sb.v] = (weights[sb.v] || 0) + wb; if (!views[sb.v]) views[sb.v] = { key: B.key, ...viewParams(chapter, B.key, 0, B.len || 1) }; }
+    if (sa.v) { weights[sa.v] = (weights[sa.v] || 0) + wa; views[sa.v] = { key: A.key, tp, ...viewParams(chapter, A.key, t, L) }; }
+    if (sb.v && wb > 0) { weights[sb.v] = (weights[sb.v] || 0) + wb; if (!views[sb.v]) views[sb.v] = { key: B.key, tp: 0, ...viewParams(chapter, B.key, 0, B.len || 1) }; }
+    if (!same) { if (sa.v) scales[sa.v] = 1 + 0.025 * (1 - wa); if (sb.v) scales[sb.v] = 1.04 - 0.04 * wb; }
     w3 = (sa.s ? wa : 0) + (sb.s ? wb : 0);
     // 3D: escena y encuadre
     const s3 = sa.s || sb.s;
@@ -226,12 +232,12 @@ function loop() {
       const fa = camFrame(sc, sa.s ? A.key : B.key), fb = camFrame(sc, sb.s ? B.key : A.key);
       const ce = sa.s && sb.s ? e : 0;
       cam.pos.lerpVectors(fa.p, fb.p, ce); cam.look.lerpVectors(fa.l, fb.l, ce);
-      if (sc.update) sc.update({ key: sa.s ? A.key : B.key, t: sa.s ? t : 0 });
+      if (sc.update) sc.update({ key: sa.s ? A.key : B.key, t: sa.s ? Math.max(t, tp) : 0 });
     }
     for (const kk of ['rain', 'snow', 'petals', 'leaves', 'embers', 'ash']) fxT[kk] = (sa.fx?.[kk] || 0) * wa + (sb.fx?.[kk] || 0) * wb;
     dim = lerp(A.cine ? 1 : 0, B.cine ? 1 : 0, e) * 0.62;
     music.setMood(e < 0.5 ? sa.mood : sb.mood);
-    stage.frame(weights, { key: A.key, t, time, dt, ch: chapter, views });
+    stage.frame(weights, { key: A.key, t, time, dt, ch: chapter, views }, scales);
     if (fly) { fly.t += dt / 1.2; if (fly.t >= 1) fly = null; }
   }
   if (mode !== 'reader') stage.frame({}, { time, dt });
@@ -256,6 +262,15 @@ function loop() {
   }
   requestAnimationFrame(loop);
 }
+
+// fuentes antes de pintar los lienzos (si no, el texto de las gráficas queda con letra de reemplazo)
+const ALL_VIEWS = ['bosque', 'flor', 'rio', 'ronin', 'valle', 'almacen', 'despertar', 'latido', 'enso', 'ruinas', 'camino', 'recuento', 'emaki', 'invierno'];
+Promise.race([
+  Promise.all(['700 20px "Shippori Mincho B1"', '16px "Zen Old Mincho"', '12px "IBM Plex Sans"'].map((f) => document.fonts.load(f))),
+  new Promise((r) => setTimeout(r, 3500)),
+]).then(() => { stage.relayout(); stage.warm(ALL_VIEWS); if (mode === 'menu') paintPanels(); setTimeout(() => (fontsSettled = true), 1500); });
+let fontsSettled = false;
+document.fonts.addEventListener && document.fonts.addEventListener('loadingdone', () => { if (fontsSettled) return; stage.relayout(); if (mode === 'menu') paintPanels(); });
 
 body.className = 'state-intro';
 loop();

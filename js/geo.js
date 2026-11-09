@@ -45,6 +45,7 @@ export function makeLily({ florets = 6, stem = 2.2, scale = 1, seed = 7 } = {}) 
   const R = seeded(seed);
   const root = new THREE.Group();
   const red = mat.red();
+  const redV = new THREE.MeshPhysicalMaterial({ color: '#c0141c', emissive: '#4a0306', roughness: 0.45, sheen: 0.6, sheenColor: new THREE.Color('#ff6060'), side: THREE.DoubleSide, vertexColors: true });
   const stamenMat = new THREE.MeshStandardMaterial({ color: '#c9141c', emissive: '#5a0508', roughness: 0.5 });
   const stemMat = mat.gray('#3c3a36');
 
@@ -84,7 +85,8 @@ export function makeLily({ florets = 6, stem = 2.2, scale = 1, seed = 7 } = {}) 
         pts.push(dir.clone().multiplyScalar(out).add(new THREE.Vector3(0, up + 0.02, 0)).add(new THREE.Vector3(-dir.z * wav, 0, dir.x * wav)));
       }
       const g = ribbon(new THREE.CatmullRomCurve3(pts), (t) => 0.034 * Math.sin(Math.PI * Math.min(1, t * 1.15 + 0.06)) + 0.004, 18, 0.6);
-      const m = new THREE.Mesh(g, red);
+      { const uv = g.attributes.uv, col = []; for (let q = 0; q < uv.count; q++) { const t = uv.getY(q), e = uv.getX(q); const k = 0.5 + t * 0.75 - Math.abs(e - 0.5) * 0.15; col.push(k, k * 0.9, k * 0.9); } g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3)); }
+      const m = new THREE.Mesh(g, redV);
       fl.add(m);
       root.userData.petals.push(m);
     }
@@ -165,98 +167,117 @@ export function makeBamboo(n, area, R = Math.random, color = '#5e5a55') {
 }
 
 // ---------- La Kusarigama Radiata, en 6 piezas (orden del mini juego) ----------
+// Mango vertical (y 0 → 1.55), hoja curva arriba, cadena que baja hasta el núcleo.
+function glowSprite(color = 'rgba(255,40,40,1)', size = 1) {
+  const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d');
+  const gr = g.createRadialGradient(64, 64, 0, 64, 64, 64); gr.addColorStop(0, color); gr.addColorStop(0.25, color.replace(/[\d.]+\)$/, '0.45)')); gr.addColorStop(1, 'rgba(0,0,0,0)');
+  g.fillStyle = gr; g.fillRect(0, 0, 128, 128);
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
+  sp.scale.setScalar(size); return sp;
+}
 export function makeWeapon() {
   const root = new THREE.Group();
   const parts = {};
-  const metal = new THREE.MeshStandardMaterial({ color: '#2a1a1b', roughness: 0.35, metalness: 0.6, emissive: '#2a0204' });
-  const red = new THREE.MeshStandardMaterial({ color: '#a01018', emissive: '#7a0a10', emissiveIntensity: 0.8, roughness: 0.35, metalness: 0.3 });
-  const wrap = new THREE.MeshStandardMaterial({ color: '#8b7d70', roughness: 1 });
+  const metal = new THREE.MeshPhysicalMaterial({ color: '#2b1c1d', roughness: 0.32, metalness: 0.75, clearcoat: 0.6, clearcoatRoughness: 0.3, emissive: '#1a0203' });
+  const blood = new THREE.MeshPhysicalMaterial({ color: '#8f0d16', roughness: 0.22, metalness: 0.25, clearcoat: 1, clearcoatRoughness: 0.12, emissive: '#5a050a', emissiveIntensity: 0.7 });
+  const bloodDark = new THREE.MeshPhysicalMaterial({ color: '#3a0508', roughness: 0.3, metalness: 0.4, clearcoat: 0.8, emissive: '#200203', emissiveIntensity: 0.6 });
+  const cloth = new THREE.MeshStandardMaterial({ color: '#8b7b6c', roughness: 0.95 });
+  const glowM = (i = 1.6) => new THREE.MeshStandardMaterial({ color: '#ff3a3a', emissive: '#e0303a', emissiveIntensity: i, roughness: 0.4 });
 
-  // 1. Núcleo Tóxico: esfera con pinchos al final de la cadena
+  // 1. Núcleo Tóxico: esfera irregular con pinchos y corazón luminoso
   const nucleo = new THREE.Group();
-  nucleo.add(new THREE.Mesh(new THREE.IcosahedronGeometry(0.2, 2), red));
-  const ico = new THREE.IcosahedronGeometry(0.2, 1).attributes.position;
-  const seen = new Set();
-  for (let i = 0; i < ico.count; i++) {
-    const v = new THREE.Vector3().fromBufferAttribute(ico, i).normalize();
-    const k = v.toArray().map((n) => n.toFixed(2)).join();
-    if (seen.has(k)) continue; seen.add(k);
-    const sp = new THREE.Mesh(new THREE.ConeGeometry(0.035, 0.16, 5), metal);
-    sp.position.copy(v.clone().multiplyScalar(0.24)); sp.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), v);
-    nucleo.add(sp);
+  const coreG = new THREE.IcosahedronGeometry(0.2, 4); const cp = coreG.attributes.position;
+  for (let i = 0; i < cp.count; i++) { const v = new THREE.Vector3().fromBufferAttribute(cp, i); const n = 1 + Math.sin(v.x * 30) * Math.sin(v.y * 27) * Math.sin(v.z * 33) * 0.06; v.multiplyScalar(n); cp.setXYZ(i, v.x, v.y, v.z); }
+  coreG.computeVertexNormals();
+  nucleo.add(new THREE.Mesh(coreG, blood));
+  const veinBall = new THREE.Mesh(new THREE.IcosahedronGeometry(0.205, 1), new THREE.MeshBasicMaterial({ color: '#ff4a4a', wireframe: true, transparent: true, opacity: 0.35 }));
+  nucleo.add(veinBall);
+  const dirs = new THREE.IcosahedronGeometry(1, 1).attributes.position, seen = new Set();
+  for (let i = 0; i < dirs.count; i++) {
+    const v = new THREE.Vector3().fromBufferAttribute(dirs, i).normalize(); const k = v.toArray().map((n) => n.toFixed(2)).join(); if (seen.has(k)) continue; seen.add(k);
+    const len = 0.13 + (i % 3) * 0.04;
+    const sp = new THREE.Mesh(new THREE.ConeGeometry(0.032, len, 6), metal);
+    sp.position.copy(v.clone().multiplyScalar(0.2 + len / 2 - 0.01)); sp.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), v); nucleo.add(sp);
   }
+  const coreGlow = glowSprite('rgba(255,40,40,1)', 0.6); nucleo.add(coreGlow);
   nucleo.position.set(0.15, -1.9, 0);
   parts.nucleo = nucleo;
 
-  // 2. Sistema Vascular: venas rojas en espiral sobre el mango
+  // 2. Sistema Vascular: venas que laten en espiral sobre el mango
   const vascular = new THREE.Group();
   for (let k = 0; k < 3; k++) {
-    const pts = [];
-    for (let i = 0; i <= 40; i++) { const t = i / 40; const a = t * Math.PI * 6 + k * 2.1; pts.push(new THREE.Vector3(Math.cos(a) * 0.075, t * 1.5, Math.sin(a) * 0.075)); }
-    vascular.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 80, 0.012, 5), mat.glow(0.9)));
+    const pts = []; for (let i = 0; i <= 50; i++) { const t = i / 50; const a = t * Math.PI * 5 + k * 2.1; const r = 0.078 + Math.sin(t * 40 + k) * 0.004; pts.push(new THREE.Vector3(Math.cos(a) * r, 0.08 + t * 1.38, Math.sin(a) * r)); }
+    vascular.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 120, 0.011, 6), glowM(1.2)));
   }
   parts.vascular = vascular;
 
-  // 3. Cadena Carmesí: eslabones del mango al núcleo
+  // 3. Cadena Carmesí: eslabones alternos (90°) bien alineados con la curva
   const cadena = new THREE.Group();
-  const chainCurve = new THREE.CatmullRomCurve3([new THREE.Vector3(0, 0, 0), new THREE.Vector3(-0.25, -0.6, 0.1), new THREE.Vector3(0.05, -1.25, -0.05), new THREE.Vector3(0.15, -1.68, 0)]);
-  const N = 16;
+  const chainCurve = new THREE.CatmullRomCurve3([new THREE.Vector3(0, -0.02, 0), new THREE.Vector3(-0.22, -0.55, 0.1), new THREE.Vector3(0.04, -1.2, -0.06), new THREE.Vector3(0.15, -1.66, 0)]);
+  const linkG = new THREE.TorusGeometry(0.045, 0.014, 8, 16); linkG.scale(1, 1.55, 1);
+  const N = 22;
   for (let i = 0; i < N; i++) {
     const t = i / (N - 1);
-    const link = new THREE.Mesh(new THREE.TorusGeometry(0.05, 0.016, 5, 10), i % 2 ? red : metal);
-    link.position.copy(chainCurve.getPoint(t));
-    link.lookAt(chainCurve.getPoint(Math.min(1, t + 0.02)).add(new THREE.Vector3(0, 0, 0.0001)));
-    link.rotateY(Math.PI / 2); if (i % 2) link.rotateX(Math.PI / 2);
-    link.scale.set(1, 1.5, 1);
+    const link = new THREE.Mesh(linkG, i % 2 ? blood : bloodDark);
+    link.position.copy(chainCurve.getPointAt(t));
+    const tan = chainCurve.getTangentAt(t);
+    link.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), tan);
+    link.rotateY(i % 2 ? Math.PI / 2 : 0);
     cadena.add(link);
   }
   parts.cadena = cadena;
 
-  // 4. Empuñadura: mango envuelto en vendas
+  // 4. Empuñadura: mango con vendas en espiral, virolas de metal y pomo
   const empunadura = new THREE.Group();
-  const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.06, 1.5, 10), metal);
-  shaft.position.y = 0.75; empunadura.add(shaft);
-  for (let i = 0; i < 12; i++) {
-    const r = new THREE.Mesh(new THREE.TorusGeometry(0.066, 0.02, 4, 12), wrap);
-    r.rotation.x = Math.PI / 2 + (i % 2 ? 0.25 : -0.25); r.position.y = 0.1 + i * 0.055; empunadura.add(r);
-  }
-  const cap = new THREE.Mesh(new THREE.SphereGeometry(0.08, 10, 8), metal); cap.position.y = 0; empunadura.add(cap);
+  const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.062, 1.52, 16), metal); shaft.position.y = 0.76; empunadura.add(shaft);
+  const wrapPts = []; for (let i = 0; i <= 260; i++) { const t = i / 260; const a = t * Math.PI * 34; wrapPts.push(new THREE.Vector3(Math.cos(a) * 0.066, 0.18 + t * 0.62, Math.sin(a) * 0.066)); }
+  empunadura.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(wrapPts), 600, 0.016, 5), cloth));
+  for (const y of [0.15, 0.83, 1.42]) { const r = new THREE.Mesh(new THREE.TorusGeometry(0.068, 0.014, 8, 20), metal); r.rotation.x = Math.PI / 2; r.position.y = y; empunadura.add(r); }
+  const pommel = new THREE.Mesh(new THREE.SphereGeometry(0.08, 16, 12), metal); pommel.scale.y = 0.8; empunadura.add(pommel);
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(0.05, 0.012, 8, 16), metal); ring.position.y = -0.06; empunadura.add(ring);
+  // cintas rituales que cuelgan
+  for (const sx of [-1, 1]) { const pts = [new THREE.Vector3(0.06 * sx, 0.8, 0), new THREE.Vector3(0.12 * sx, 0.66, 0.04), new THREE.Vector3(0.1 * sx, 0.5, -0.02), new THREE.Vector3(0.16 * sx, 0.36, 0.03)]; empunadura.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 20, 0.01, 4), cloth)); }
   parts.empunadura = empunadura;
 
-  // 5. Hoja Carmesí: cuchilla curva
+  // 5. Hoja Carmesí: cuchilla curva con lomo dentado, canal y filo luminoso
   const hoja = new THREE.Group();
-  const s = new THREE.Shape();
-  s.moveTo(0, 0); s.quadraticCurveTo(0.55, 0.32, 1.25, -0.05); s.quadraticCurveTo(0.6, 0.12, 0.02, -0.16); s.lineTo(0, 0);
-  const bg = new THREE.ExtrudeGeometry(s, { depth: 0.03, bevelEnabled: true, bevelThickness: 0.012, bevelSize: 0.012, bevelSegments: 1, curveSegments: 24 });
-  bg.translate(0, 0, -0.015);
-  const blade = new THREE.Mesh(bg, red);
-  hoja.add(blade);
-  // filo más brillante
-  const edge = new THREE.Mesh(new THREE.TubeGeometry(new THREE.QuadraticBezierCurve3(new THREE.Vector3(0.02, -0.16, 0), new THREE.Vector3(0.6, 0.12, 0), new THREE.Vector3(1.25, -0.05, 0)), 30, 0.008, 4), mat.glow(2));
-  hoja.add(edge);
-  // dientes del lomo
-  for (let i = 1; i < 8; i++) {
-    const t = i / 8; const x = t * 1.2, y = 0.32 * 4 * t * (1 - t) * 0.62;
-    const tooth = new THREE.Mesh(new THREE.ConeGeometry(0.02, 0.09, 4), metal);
-    tooth.position.set(x, y + 0.03, 0); tooth.rotation.z = -0.5; hoja.add(tooth);
+  const sh = new THREE.Shape();
+  sh.moveTo(0, -0.02); sh.bezierCurveTo(0.35, 0.36, 0.95, 0.34, 1.32, -0.08); sh.bezierCurveTo(1.0, 0.12, 0.5, 0.12, 0.04, -0.2); sh.lineTo(0, -0.02);
+  const bg = new THREE.ExtrudeGeometry(sh, { depth: 0.022, bevelEnabled: true, bevelThickness: 0.016, bevelSize: 0.022, bevelSegments: 3, curveSegments: 48 });
+  bg.translate(0, 0, -0.011);
+  hoja.add(new THREE.Mesh(bg, blood));
+  const edgeCurve = new THREE.CubicBezierCurve3(new THREE.Vector3(0.04, -0.2, 0), new THREE.Vector3(0.5, 0.12, 0), new THREE.Vector3(1.0, 0.12, 0), new THREE.Vector3(1.32, -0.08, 0));
+  hoja.add(new THREE.Mesh(new THREE.TubeGeometry(edgeCurve, 60, 0.007, 5), glowM(2.4)));
+  const fuller = new THREE.CubicBezierCurve3(new THREE.Vector3(0.08, -0.04, 0.02), new THREE.Vector3(0.4, 0.2, 0.02), new THREE.Vector3(0.85, 0.2, 0.02), new THREE.Vector3(1.15, -0.02, 0.02));
+  hoja.add(new THREE.Mesh(new THREE.TubeGeometry(fuller, 50, 0.006, 4), bloodDark));
+  const back = new THREE.CubicBezierCurve3(new THREE.Vector3(0, -0.02, 0), new THREE.Vector3(0.35, 0.36, 0), new THREE.Vector3(0.95, 0.34, 0), new THREE.Vector3(1.32, -0.08, 0));
+  for (let i = 1; i < 11; i++) {
+    const t = i / 11, p = back.getPoint(t), tg = back.getTangent(t);
+    const nrm = new THREE.Vector3(-tg.y, tg.x, 0).normalize();
+    const tooth = new THREE.Mesh(new THREE.ConeGeometry(0.018, 0.075 + (i % 2) * 0.03, 5), metal);
+    tooth.position.copy(p).addScaledVector(nrm, 0.03); tooth.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), nrm.clone().addScaledVector(tg, -0.4).normalize());
+    hoja.add(tooth);
   }
+  const bladeGlow = glowSprite('rgba(255,50,50,1)', 0.45); bladeGlow.position.set(0.8, 0.02, 0.05); hoja.add(bladeGlow);
   hoja.position.set(-0.02, 1.5, 0);
   parts.hoja = hoja;
 
-  // 6. Relieve del lirio: sello circular en la base de la hoja
+  // 6. Relieve del lirio: medallón en la base de la hoja con seis pétalos que brillan
   const relieve = new THREE.Group();
-  const disc = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.04, 20), metal);
-  disc.rotation.x = Math.PI / 2; relieve.add(disc);
+  const disc = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.05, 32), metal); disc.rotation.x = Math.PI / 2; relieve.add(disc);
+  const rim = new THREE.Mesh(new THREE.TorusGeometry(0.12, 0.012, 8, 32), bloodDark); relieve.add(rim);
   for (let i = 0; i < 6; i++) {
     const a = (i / 6) * Math.PI * 2;
-    const pet = new THREE.Mesh(new THREE.CapsuleGeometry(0.012, 0.07, 2, 4), mat.glow(1.6));
-    pet.position.set(Math.cos(a) * 0.05, Math.sin(a) * 0.05, 0.03); pet.rotation.z = a - Math.PI / 2; relieve.add(pet);
+    const pts = [new THREE.Vector3(0, 0, 0.03), new THREE.Vector3(Math.cos(a) * 0.05, Math.sin(a) * 0.05, 0.04), new THREE.Vector3(Math.cos(a + 0.5) * 0.085, Math.sin(a + 0.5) * 0.085, 0.035)];
+    relieve.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 12, 0.009, 5), glowM(2)));
   }
-  relieve.position.set(0, 1.52, 0);
+  const relGlow = glowSprite('rgba(255,60,60,1)', 0.25); relGlow.position.z = 0.05; relieve.add(relGlow);
+  relieve.position.set(0, 1.52, 0.02);
   parts.relieve = relieve;
 
   for (const k in parts) { parts[k].userData.home = parts[k].position.clone(); parts[k].userData.homeRot = parts[k].rotation.clone(); parts[k].userData.id = k; root.add(parts[k]); }
   root.userData.parts = parts;
+  root.userData.glows = [coreGlow, bladeGlow, relGlow];
   return root;
 }
 

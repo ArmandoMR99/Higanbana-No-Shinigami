@@ -21,7 +21,7 @@ body, button, a { cursor: none; }
 button { font: inherit; color: inherit; background: none; border: 0; }
 [hidden] { display: none !important; }
 
-#gl { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; z-index: 2; transition: opacity .2s; }
+#gl { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; z-index: 2; }
 #stage { position: fixed; inset: 0; z-index: 1; pointer-events: none; overflow: hidden; background: var(--ink); }
 #stage .view { position: absolute; inset: 0; visibility: hidden; opacity: 0; }
 #stage .layer { position: absolute; will-change: transform; }
@@ -150,12 +150,12 @@ body.opening .panel > * { opacity: 0; transition: opacity .4s; }
 
 /* ---------- Lector ---------- */
 #reader {
-  position: fixed; inset: 0; z-index: 8; overflow-y: auto; overflow-x: hidden; scroll-snap-type: y mandatory;
+  position: fixed; inset: 0; z-index: 8; overflow-y: auto; overflow-x: hidden;
   opacity: 0; pointer-events: none; transition: opacity 1s var(--ease); scrollbar-width: none;
 }
 #reader::-webkit-scrollbar { display: none; }
 body.state-reader #reader { opacity: 1; pointer-events: auto; }
-.passage { position: relative; height: 100vh; scroll-snap-align: start; pointer-events: none; display: flow-root; }
+.passage { position: relative; height: 100vh; pointer-events: none; display: flow-root; }
 .passage .scroll {
   position: sticky; top: 0; height: 100vh; width: min(36vw, 520px); padding: 16vh 2.6rem 12vh 4.2rem;
   display: flex; flex-direction: column; justify-content: center; pointer-events: auto;
@@ -169,7 +169,10 @@ body.state-reader #reader { opacity: 1; pointer-events: auto; }
 .passage p { margin: 0 0 1.2em; font-size: clamp(.98rem, 1.12vw, 1.12rem); line-height: 1.85; color: #d6d0c7;
   opacity: 0; transform: translateY(14px); transition: opacity 1s var(--ease), transform 1s var(--ease); }
 .passage p:last-child { margin-bottom: 0; }
-.passage.seen p.off, .passage p.off { display: none; }
+.pages { display: grid; }
+.page { grid-area: 1 / 1; opacity: 0; transform: translateY(10px); transition: opacity .9s var(--ease), transform .9s var(--ease); pointer-events: none; }
+.page.on { opacity: 1; transform: none; pointer-events: auto; }
+.passage .page p { opacity: 1; transform: none; }
 .passage.seen p { opacity: 1; transform: none; }
 .passage.seen p:nth-child(2) { transition-delay: .25s; }
 .passage.seen p:nth-child(3) { transition-delay: .5s; }

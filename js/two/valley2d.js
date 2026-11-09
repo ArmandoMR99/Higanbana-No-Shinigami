@@ -1,6 +1,6 @@
 // El valle de Yomigawa en 2D: mapa pintado a pincel, visto desde arriba.
 // Vistas: 'valle' (la noche del ataque, Cap. I y II) y 'recuento' (columnas y farolillos, Cap. III).
-import { C, rng, noise1, paper, mountains, brush, line, wash, house, callout, corners, frame, creature, spline } from './brush.js';
+import { C, rng, noise1, paper, mountains, brush, line, wash, house, callout, corners, frame, creature, spline, chartCard, axisLabel, cached } from './brush.js';
 import { BARRIOS, CRIATURAS, nightAt, hhmm } from '../story.js';
 
 // tabla A (0..100) -> coordenadas del mapa (1000 x 720)
@@ -102,19 +102,16 @@ function paintHouses(ctx, L) {
 function paintChartFrame(ctx, L) {
   ctx.save(); ctx.translate(L.ox, L.oy); ctx.scale(L.s, L.s);
   const x = 600, y = 22, w = 370, h = 150;
-  ctx.fillStyle = 'rgba(12,9,9,0.82)'; ctx.fillRect(x, y, w, h);
-  frame(ctx, x, y, w, h, { color: C.boneA(0.3) });
-  ctx.fillStyle = C.boneA(0.85); ctx.font = '13px "Zen Old Mincho", serif'; ctx.textAlign = 'left'; ctx.fillText('Pueblo alcanzado por el ataque', x + 16, y + 24);
-  ctx.font = '10px "IBM Plex Sans", sans-serif'; ctx.fillStyle = C.boneA(0.5);
-  for (const m of [0, 15, 30, 45, 60]) { const px = x + 30 + (m / 60) * (w - 60); ctx.textAlign = 'center'; ctx.fillText(hhmm(m), px, y + h - 10); line(ctx, [[px, y + h - 24], [px, y + h - 28]], { alpha: 0.5 }); }
+  chartCard(ctx, x, y, w, h, 'Pueblo alcanzado por el ataque', 'Porcentaje del valle · 22:00 a 23:00');
+  for (const m of [0, 15, 30, 45, 60]) { const px = x + 30 + (m / 60) * (w - 60); axisLabel(ctx, hhmm(m), px, y + h - 9); line(ctx, [[px, y + h - 24], [px, y + h - 28]], { alpha: 0.5 }); }
   line(ctx, [[x + 30, y + h - 26], [x + w - 30, y + h - 26]], { alpha: 0.35 });
-  line(ctx, [[x + 30, y + 42], [x + w - 30, y + 42]], { alpha: 0.2, dash: [2, 4] });
-  ctx.textAlign = 'right'; ctx.fillText('100 %', x + 26, y + 46);
+  line(ctx, [[x + 30, y + 56], [x + w - 30, y + 56]], { alpha: 0.16, dash: [2, 4] });
+  axisLabel(ctx, '100 %', x + w - 28, y + 52, 'right');
   ctx.restore();
 }
 
 // --- capa dinámica ---
-function chartPt(m) { const x = 600, y = 22, w = 370, h = 150; return [x + 30 + (m / 60) * (w - 60), y + h - 26 - (nightAt(m, 'reach') / 100) * (h - 68)]; }
+function chartPt(m) { const x = 600, y = 22, w = 370, h = 150; return [x + 30 + (m / 60) * (w - 60), y + h - 26 - (nightAt(m, 'reach') / 100) * (h - 82)]; }
 
 function drawNight(ctx, L, S, time) {
   const { m, heat = 0, trail = 0, dawn = 0 } = S;
@@ -151,7 +148,8 @@ function drawNight(ctx, L, S, time) {
     let [x, y] = at(c, f);
     if (f >= 1) { const a = time * (c.t === 'dragon' ? 0.6 : 1) + c.ph, r = c.t === 'dragon' ? 26 : 8; x += Math.cos(a) * r; y += Math.sin(a) * r * 0.6; }
     const ahead = at(c, Math.min(1, f + 0.03));
-    creature(ctx, c.t, x, y, c.t === 'dragon' ? 1.1 : 0.9, { alpha: 1 - dawn, ang: c.t === 'dragon' ? Math.atan2(ahead[1] - y, ahead[0] - x) * (f < 1 ? 1 : 0) : 0 });
+    const ang = c.t === 'dragon' ? (f < 1 ? Math.atan2(ahead[1] - y, ahead[0] - x) : (time * 0.6 + c.ph) + Math.PI / 2) + Math.PI : 0;
+    creature(ctx, c.t, x, y, c.t === 'dragon' ? 0.9 : 0.75, { alpha: 1 - dawn, ang });
   }
   // rastro de sangre de Kenji (Cap. II)
   if (trail > 0) {
@@ -161,7 +159,7 @@ function drawNight(ctx, L, S, time) {
     const e = tp[n - 1];
     if (trail < 1) { ctx.fillStyle = C.glow; ctx.beginPath(); ctx.arc(e[0], e[1], 4, 0, 7); ctx.fill(); ctx.fillStyle = C.bone; ctx.font = '12px "Zen Old Mincho", serif'; ctx.textAlign = 'center'; ctx.fillText('Kenji', e[0], e[1] - 12); }
     else { // los dos dragones colosales caídos
-      creature(ctx, 'dragon', 600, 350, 2.6, { alpha: 0.9, ang: 0.4, color: '#8a8580' }); creature(ctx, 'dragon', 640, 270, 2.4, { alpha: 0.9, ang: -0.6, color: '#8a8580' });
+      creature(ctx, 'dragon', 600, 350, 2.1, { alpha: 0.75, ang: 0.4 }); creature(ctx, 'dragon', 640, 270, 1.9, { alpha: 0.75, ang: -2.6 });
       callout(ctx, [610, 345], [470, 470], 'Dos dragones colosales', { align: 'right', size: 12, sub: 'cortados por la cadena' });
     }
   }
@@ -258,7 +256,7 @@ export function defineValley(stage, { onBarrio }) {
         }
         if (solid > 0) {
           ctx.globalAlpha = solid * colA;
-          brush(ctx, [[x, y], [x, y - H]], { w: 26, color: '#d9d3cb', alpha: 0.9, profile: 'even', dry: 0.35, seed: b.dmg, n: 20 });
+          const bar = cached('bar-' + b.id, 40, 310, (g) => brush(g, [[20, 305], [20, 5]], { w: 26, color: '#d9d3cb', alpha: 0.92, profile: 'even', dry: 0.35, seed: b.dmg, n: 24 }), 2); const fh = Math.max(1, H); ctx.drawImage(bar, 0, (310 - fh) * 2, 80, fh * 2, x - 20, y - fh, 40, fh);
           ctx.fillStyle = C.glow; ctx.fillRect(x - 14, y - H - 4, 28, 5);
           ctx.fillStyle = '#f1ebe2'; ctx.font = '700 22px "Shippori Mincho B1", serif'; ctx.textAlign = 'center'; ctx.fillText(`${b.dmg} %`, x, y - H - 16);
           ctx.font = '11px "IBM Plex Sans", sans-serif'; ctx.fillStyle = C.boneA(0.7); ctx.fillText(b.name.toUpperCase(), x, y + 22);

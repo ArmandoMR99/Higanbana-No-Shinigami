@@ -10,26 +10,19 @@ export function buildForge(app, { onPiece } = {}) {
   scene.add(new THREE.HemisphereLight('#b8b2aa', '#0a0808', 0.55));
   const key = new THREE.DirectionalLight('#ffffff', 1.6); key.position.set(-3, 5, 4); scene.add(key);
   const rimL = new THREE.PointLight('#ff2a2a', 14, 9, 1.6); rimL.position.set(2.4, 2.2, -1.6); scene.add(rimL);
-  const rimR = new THREE.PointLight('#ff3a3a', 8, 8, 1.6); rimR.position.set(-2.6, 0.6, -1.2); scene.add(rimR);
+  const rimR = new THREE.PointLight('#ff3a3a', 8, 8, 1.6); rimR.position.set(-2.6, 2.2, -1.6); scene.add(rimR);
   const core = new THREE.PointLight('#ff2020', 0, 5, 1.6); core.position.set(0, 1.2, 1.2); scene.add(core);
 
   // suelo: charco oscuro que refleja
-  const floor = new THREE.Mesh(new THREE.CircleGeometry(9, 64), new THREE.MeshStandardMaterial({ color: '#151111', roughness: 0.15, metalness: 0.7 }));
-  floor.rotation.x = -Math.PI / 2; floor.position.y = -0.6; scene.add(floor);
+  const floor = new THREE.Mesh(new THREE.CircleGeometry(9, 64), new THREE.MeshStandardMaterial({ color: '#100c0c', roughness: 0.75, metalness: 0.15 }));
+  floor.rotation.x = -Math.PI / 2; floor.position.y = -0.9; scene.add(floor);
   const pool = new THREE.Mesh(new THREE.CircleGeometry(0.9, 48), new THREE.MeshStandardMaterial({ color: '#5a0a10', emissive: '#3a0306', roughness: 0.1, metalness: 0.3 }));
-  pool.rotation.x = -Math.PI / 2; pool.position.set(0.3, -0.59, -0.4); scene.add(pool);
+  pool.rotation.x = -Math.PI / 2; pool.position.set(0.3, -0.59, -0.4); pool.visible = false;
 
   const weapon = makeWeapon();
   weapon.position.set(0.1, 1.35, 0); weapon.rotation.set(0, -0.25, -0.35); weapon.scale.setScalar(0.9);
   scene.add(weapon);
-  // materiales más ricos: brillo húmedo en la hoja y el núcleo
-  weapon.traverse((o) => {
-    if (!o.isMesh) return;
-    const m = o.material;
-    if (m.color && m.color.r > 0.4 && m.color.g < 0.2 && (m.emissiveIntensity ?? 0) <= 1.2) {
-      o.material = new THREE.MeshPhysicalMaterial({ color: m.color, emissive: m.emissive, emissiveIntensity: m.emissiveIntensity, roughness: 0.25, metalness: 0.35, clearcoat: 1, clearcoatRoughness: 0.15 });
-    } else o.material = m.clone();
-  });
+  weapon.traverse((o) => { if (o.isMesh) o.material = o.material.clone(); });
   const parts = weapon.userData.parts;
   const order = PIEZAS.map((p) => p.id);
   const clickables = [];
@@ -44,6 +37,8 @@ export function buildForge(app, { onPiece } = {}) {
 
   const blood = makeParticles({ count: 220, kind: 'ash', color: '#c0141c', size: 0.035, area: [4, 3.2, 2], center: [0.1, 1.3, 0] });
   blood.userData.speed = -0.35; scene.add(blood);
+  const embers = makeParticles({ count: 120, kind: 'ember', color: '#ff4a2a', size: 0.03, area: [6, 4, 4], center: [0, 1, -0.5] });
+  embers.userData.speed = 0.6; scene.add(embers);
   const drops = makeParticles({ count: 60, kind: 'ash', color: '#e0303a', size: 0.06, area: [0.8, 3, 0.8], center: [0.1, 1.2, 0] });
   drops.userData.speed = -2.2; scene.add(drops);
 
@@ -54,11 +49,11 @@ export function buildForge(app, { onPiece } = {}) {
   const setPlaced = (n) => { placed = n; refresh(); };
 
   const frames = {
-    menu: { pos: [0.2, 1.5, 6.2], look: [0.2, 1.2, 0] },
-    despertar2: { pos: [0.6, 1.4, 4.8], look: [0.1, 1.2, 0] },
-    forja: { pos: [0.2, 1.4, 4.9], look: [0.2, 1.25, 0] },
-    arma: { pos: [0.7, 1.5, 4.6], look: [0.2, 1.25, 0] },
-    arma2: { pos: [0.5, 1.5, 4.1], look: [0.2, 1.3, 0] },
+    menu: { pos: [0.2, 1.35, 7.4], look: [0.15, 1.2, 0] },
+    despertar2: { pos: [0.5, 1.3, 6.4], look: [0.1, 1.2, 0] },
+    forja: { pos: [0.2, 1.3, 6.6], look: [0.1, 1.15, 0] },
+    arma: { pos: [0.7, 1.4, 6.0], look: [0.15, 1.3, 0] },
+    arma2: { pos: [0.4, 1.45, 5.4], look: [0.15, 1.35, 0] },
   };
 
   return {
@@ -85,7 +80,8 @@ export function buildForge(app, { onPiece } = {}) {
       drops.visible = key === 'despertar2' || key === 'forja';
     },
     tick(dt, time, mode) {
-      blood.update(dt, time); drops.update(dt, time);
+      blood.update(dt, time); drops.update(dt, time); embers.update(dt, time);
+      weapon.userData.glows.forEach((g, i) => { g.material.opacity = 0.35 + 0.2 * Math.sin(time * 1.8 + i); });
       for (const id of order) {
         const target = mode === 'menu' || current !== 'forja' && current !== 'despertar2' ? 1 : order.indexOf(id) < placed ? 1 : 0;
         const p = parts[id];
