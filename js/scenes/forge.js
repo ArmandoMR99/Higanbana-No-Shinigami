@@ -19,6 +19,28 @@ export function buildForge(app, { onPiece } = {}) {
   const pool = new THREE.Mesh(new THREE.CircleGeometry(0.9, 48), new THREE.MeshStandardMaterial({ color: '#5a0a10', emissive: '#3a0306', roughness: 0.1, metalness: 0.3 }));
   pool.rotation.x = -Math.PI / 2; pool.position.set(0.3, -0.59, -0.4); pool.visible = false;
 
+  // círculo del higanbana en el suelo: anillos, kanji y una flor de seis pétalos que se encienden con la forja
+  const drawMon = () => {
+    const c = document.createElement('canvas'); c.width = c.height = 1024; const g = c.getContext('2d'); g.translate(512, 512);
+    g.strokeStyle = 'rgba(255,60,60,1)'; g.fillStyle = 'rgba(255,60,60,1)';
+    for (const [r, w] of [[490, 6], [462, 2], [330, 3], [312, 1.5], [120, 3]]) { g.lineWidth = w; g.beginPath(); g.arc(0, 0, r, 0, Math.PI * 2); g.stroke(); }
+    g.font = '700 64px "Shippori Mincho B1", serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+    const txt = '彼岸花の死神・彼岸花の死神・';
+    for (let i = 0; i < txt.length; i++) { const a = (i / txt.length) * Math.PI * 2; g.save(); g.rotate(a); g.fillText(txt[i], 0, -398); g.restore(); }
+    for (let k = 0; k < 6; k++) { g.save(); g.rotate((k / 6) * Math.PI * 2); g.lineWidth = 5; g.beginPath(); g.moveTo(0, -120); g.bezierCurveTo(70, -180, 40, -280, 0, -312); g.bezierCurveTo(-40, -280, -70, -180, 0, -120); g.stroke(); g.lineWidth = 1.5; g.beginPath(); g.moveTo(0, -60); g.quadraticCurveTo(60, -200, 120, -300); g.stroke(); g.restore(); }
+    for (let k = 0; k < 24; k++) { g.save(); g.rotate((k / 24) * Math.PI * 2); g.fillRect(-1.5, -330, 3, 18); g.restore(); }
+    const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+  };
+  const monTex = drawMon();
+  const mon = new THREE.Mesh(new THREE.PlaneGeometry(4.6, 4.6), new THREE.MeshBasicMaterial({ map: monTex, transparent: true, opacity: 0.35, blending: THREE.AdditiveBlending, depthWrite: false, color: '#ff3a3a' }));
+  mon.rotation.x = -Math.PI / 2; mon.position.set(0.25, -0.88, 0); scene.add(mon);
+  // gotas de sangre que caen del núcleo al círculo, con ondas
+  const drips = [];
+  for (let k = 0; k < 5; k++) {
+    const d = new THREE.Mesh(new THREE.SphereGeometry(0.022, 8, 6), new THREE.MeshBasicMaterial({ color: '#ff2a2a' })); d.scale.y = 1.8;
+    const rip = new THREE.Mesh(new THREE.RingGeometry(0.05, 0.065, 40), new THREE.MeshBasicMaterial({ color: '#ff3a3a', transparent: true, opacity: 0, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false }));
+    rip.rotation.x = -Math.PI / 2; scene.add(d, rip); drips.push({ d, rip, ph: k / 5 });
+  }
   const weapon = makeWeapon();
   weapon.position.set(0.1, 1.35, 0); weapon.rotation.set(0, -0.25, -0.35); weapon.scale.setScalar(1.12);
   // telón de fondo: resplandor rojo difuso que da profundidad
@@ -61,6 +83,7 @@ export function buildForge(app, { onPiece } = {}) {
   return {
     scene, frames, parallax: 0.2,
     setPlaced, get placed() { return placed; },
+    refresh() { const old = mon.material.map; mon.material.map = drawMon(); mon.material.needsUpdate = true; old.dispose(); },
     pick(mouse, hoverOnly) {
       if (current !== 'forja') return false;
       const ray = new THREE.Raycaster(); ray.setFromCamera(mouse, app.camera);
@@ -82,6 +105,10 @@ export function buildForge(app, { onPiece } = {}) {
     },
     tick(dt, time, mode) {
       blood.update(dt, time); drops.update(dt, time); embers.update(dt, time);
+      mon.rotation.z = time * 0.05;
+      mon.material.opacity = (placed >= 6 || current !== 'forja' ? 0.42 : 0.12 + placed * 0.05) + Math.sin(time * 1.8) * 0.06;
+      { const cp = new THREE.Vector3(); weapon.userData.parts.nucleo.getWorldPosition(cp);
+        for (const q of drips) { const f = (time * 0.35 + q.ph) % 1; const fall = Math.min(1, f / 0.45); q.d.visible = f < 0.45 && weapon.visible; q.d.position.set(cp.x, cp.y - 0.2 - fall * fall * (cp.y + 0.68), cp.z); const rf = Math.max(0, (f - 0.45) / 0.55); q.rip.position.set(cp.x, -0.875, cp.z); q.rip.scale.setScalar(1 + rf * 9); q.rip.material.opacity = rf > 0 ? (1 - rf) * 0.6 : 0; } }
       weapon.userData.glows.forEach((g, i) => { g.material.opacity = 0.35 + 0.2 * Math.sin(time * 1.8 + i); });
       for (const id of order) {
         const target = mode === 'menu' || current !== 'forja' && current !== 'despertar2' ? 1 : order.indexOf(id) < placed ? 1 : 0;

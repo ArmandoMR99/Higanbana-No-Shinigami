@@ -76,7 +76,7 @@ const fx = new FX(document.getElementById('fx'));
 defineValley(stage, { onBarrio: (b) => { showEma(b); music.sfx('open'); } });
 defineViews(stage, { onBestia: (id, cb) => { showBestia(id, cb); music.sfx('open'); } });
 
-const reader = new Reader(document.getElementById('reader'), { onEnd: (go) => (go === 'menu' ? toMenu() : openChapter(+go)), onStep: () => music.sfx('step') });
+const reader = new Reader(document.getElementById('reader'), { onEnd: (go) => (go === 'menu' ? toMenu() : go === 'about' ? openAbout() : openChapter(+go)), onStep: () => music.sfx('step') });
 
 let mode = 'intro', chapter = 0, hover = 0;
 const cam = { pos: new THREE.Vector3(...lily.frames.menu.pos), look: new THREE.Vector3(...lily.frames.menu.look), shift: 0 };
@@ -99,7 +99,7 @@ menu.innerHTML = CHAPTERS.map((c, i) => `
     <span class="num">${c.roman}</span>
     <span class="sub">${c.roman} · ${c.sub}</span>
     <span class="name">${c.name}</span>
-  </button>`).join('') + '<div class="menu-foot"><span><b>●</b>Clic · Entrar</span><span><b>esc</b>Volver</span></div>';
+  </button>`).join('') + '<div class="menu-foot"><span><b>●</b>Clic · Entrar</span><span><b>esc</b>Volver</span><button id="btn-about">Sobre el proyecto</button></div>';
 const panels = [...menu.querySelectorAll('.panel')];
 function paintPanels() {
   panels.forEach((p, i) => { const box = p.querySelector('.art'); box.innerHTML = ''; const r = p.getBoundingClientRect(); if (r.width < 10) return; const cv = canvas(r.width, r.height); paintPanel(i, cv); box.appendChild(cv); });
@@ -124,8 +124,9 @@ function toMenu() {
 }
 
 function enterSite() {
-  if (mode !== 'intro') return;
-  music.start(); music.sfx('enter'); soundBtn.classList.remove('off'); soundBtn.title = 'Silenciar';
+  if (mode !== 'intro' || body.classList.contains('state-loading')) return;
+  let pref = null; try { pref = localStorage.getItem('hns-sound'); } catch (e) {}
+  if (pref !== 'off') { music.start(); music.sfx('enter'); soundBtn.classList.remove('off'); soundBtn.title = 'Silenciar'; }
   body.classList.add('leaving-intro');
   lily.burst();
   setTimeout(() => { body.classList.remove('leaving-intro'); toMenu(); }, 1500);
@@ -142,6 +143,7 @@ function openChapter(n) {
     if (n === 2) forge.setPlaced(0);
     mode = 'reader';
     body.className = `state-reader ch-${n}`;
+    const C0 = CHAPTERS[i]; document.getElementById('chapter-tag').innerHTML = `Capítulo ${C0.roman}<span lang="ja">${C0.kanji}</span>${C0.name}`;
     fly = { t: 0 };
   };
   if (mode === 'menu') { body.classList.add('opening'); setTimeout(go, 850); } else go();
@@ -161,7 +163,8 @@ addEventListener('click', (e) => {
   active3d.pick(app.mouse, false);
 });
 addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') { if (cardOpen()) hideCard(); else if (mode === 'reader') toMenu(); return; }
+  if (e.key === 'Escape') { if (!about.hidden) closeAbout(); else if (cardOpen()) hideCard(); else if (mode === 'reader') toMenu(); return; }
+  if (!about.hidden) return;
   if (mode === 'intro' && (e.key === 'Enter' || e.key === ' ')) { enterSite(); e.preventDefault(); return; }
   if (mode === 'menu') {
     if (e.key === 'ArrowRight') selectPanel((hover + 1) % 3);
@@ -177,7 +180,13 @@ addEventListener('keydown', (e) => {
 document.getElementById('btn-esc').addEventListener('click', toMenu);
 document.getElementById('btn-bestias').addEventListener('click', () => showBestia('dragon'));
 const soundBtn = document.getElementById('btn-sound');
-soundBtn.addEventListener('click', (e) => { e.stopPropagation(); const on = music.toggle(); soundBtn.classList.toggle('off', !on); soundBtn.title = on ? 'Silenciar' : 'Activar sonido'; });
+soundBtn.addEventListener('click', (e) => { e.stopPropagation(); const on = music.toggle(); soundBtn.classList.toggle('off', !on); soundBtn.title = on ? 'Silenciar' : 'Activar sonido'; try { localStorage.setItem('hns-sound', on ? 'on' : 'off'); } catch (err) {} });
+// sobre el proyecto
+const about = document.getElementById('about');
+const openAbout = () => { about.hidden = false; music.sfx('open'); };
+const closeAbout = () => { about.hidden = true; };
+about.addEventListener('click', (e) => { if (e.target === about || e.target.closest('.about-close')) closeAbout(); });
+menu.addEventListener('click', (e) => { if (e.target.closest('#btn-about')) { e.stopPropagation(); openAbout(); } }, true);
 
 addEventListener('resize', () => {
   camera.aspect = innerWidth / innerHeight;
@@ -204,6 +213,41 @@ function viewParams(ch, key, t, L) {
 const camFrame = (sc, key) => { const f = sc.frames[key] || sc.frames.menu; return { p: new THREE.Vector3(...f.pos), l: new THREE.Vector3(...f.look) }; };
 
 // ---------- Bucle ----------
+// ---------- estela de brasas que deja el cursor ----------
+const trailCv = document.getElementById('trail'), tctx = trailCv.getContext('2d');
+const embers = [];
+const sizeTrail = () => { trailCv.width = innerWidth; trailCv.height = innerHeight; };
+sizeTrail(); addEventListener('resize', sizeTrail);
+let lastPt = null;
+addEventListener('pointermove', (e) => {
+  if (e.pointerType !== 'mouse') return;
+  const d = lastPt ? Math.hypot(e.clientX - lastPt[0], e.clientY - lastPt[1]) : 0; lastPt = [e.clientX, e.clientY];
+  const n = Math.min(3, Math.floor(d / 14) + (Math.random() < 0.35 ? 1 : 0));
+  for (let k = 0; k < n && embers.length < 90; k++) embers.push({ x: e.clientX + (Math.random() - 0.5) * 6, y: e.clientY + (Math.random() - 0.5) * 6, vx: (Math.random() - 0.5) * 18, vy: -14 - Math.random() * 26, life: 1, r: 0.8 + Math.random() * 1.6 });
+});
+function drawTrail(dt) {
+  tctx.clearRect(0, 0, trailCv.width, trailCv.height);
+  if (!embers.length) return;
+  tctx.globalCompositeOperation = 'lighter';
+  for (let i = embers.length - 1; i >= 0; i--) {
+    const p = embers[i]; p.life -= dt * 1.1; if (p.life <= 0) { embers.splice(i, 1); continue; }
+    p.x += p.vx * dt; p.y += p.vy * dt; p.vx *= 0.98;
+    tctx.fillStyle = `rgba(255,${70 + p.life * 80 | 0},50,${p.life * 0.8})`;
+    tctx.beginPath(); tctx.arc(p.x, p.y, p.r * p.life + 0.3, 0, 7); tctx.fill();
+  }
+  tctx.globalCompositeOperation = 'source-over';
+}
+
+// ---------- calidad adaptativa: si el equipo va lento, baja la resolución del 3D y el bloom ----------
+const perf = { acc: 0, n: 0, level: 0 };
+function adapt(dt) {
+  perf.acc += dt; perf.n++;
+  if (perf.n < 90) return;
+  const avg = perf.acc / perf.n; perf.acc = 0; perf.n = 0;
+  if (avg > 1 / 38 && perf.level === 0) { perf.level = 1; renderer.setPixelRatio(1); if (composer.setPixelRatio) composer.setPixelRatio(1); composer.setSize(innerWidth, innerHeight); ink.uniforms.resolution.value.set(innerWidth, innerHeight); }
+  else if (avg > 1 / 30 && perf.level === 1) { perf.level = 2; bloom.enabled = false; }
+}
+
 const clock = new THREE.Clock();
 const labelsEl = document.getElementById('labels'), forgeListEl = document.getElementById('forge-list');
 const fade = document.getElementById('fade');
@@ -253,6 +297,7 @@ function loop() {
   fx.frame(fxT, dt, time);
   fade.style.opacity = Math.max(dim, fly ? 1 - smooth(clamp(fly.t)) : 0);
   music.tick();
+  drawTrail(dt);
 
   // 3D solo cuando se ve (y sus etiquetas solo con él)
   glCanvas.style.opacity = w3.toFixed(3);
@@ -269,6 +314,7 @@ function loop() {
     camera.updateProjectionMatrix();
     ink.uniforms.time.value = time;
     composer.render();
+    if (!body.classList.contains('state-loading')) adapt(dt);
     labels.render(active3d.scene, camera);
   }
   requestAnimationFrame(loop);
@@ -279,10 +325,20 @@ const ALL_VIEWS = ['bosque', 'flor', 'rio', 'ronin', 'valle', 'almacen', 'desper
 Promise.race([
   Promise.all(['700 20px "Shippori Mincho B1"', '16px "Zen Old Mincho"', '12px "IBM Plex Sans"'].map((f) => document.fonts.load(f))),
   new Promise((r) => setTimeout(r, 3500)),
-]).then(() => { stage.relayout(); stage.warm(ALL_VIEWS); if (mode === 'menu') paintPanels(); setTimeout(() => (fontsSettled = true), 1500); });
+]).then(() => { forge.refresh(); stage.relayout(); stage.warm(ALL_VIEWS); if (mode === 'menu') paintPanels(); setTimeout(() => (fontsSettled = true), 1500); });
 let fontsSettled = false;
 document.fonts.addEventListener && document.fonts.addEventListener('loadingdone', () => { if (fontsSettled) return; stage.relayout(); if (mode === 'menu') paintPanels(); });
 
-body.className = 'state-intro';
+// ---------- carga: fuentes, sombreadores del 3D y primeros cuadros ----------
+const ring = document.querySelector('#loader .ring');
+const setLoad = (f) => { if (ring) ring.style.strokeDashoffset = String(327 * (1 - f)); };
+setLoad(0.25);
 loop();
+const t0 = performance.now();
+Promise.race([document.fonts.ready, new Promise((r) => setTimeout(r, 3500))]).then(() => {
+  setLoad(0.6);
+  try { renderer.compile(lily.scene, camera); renderer.compile(forge.scene, camera); } catch (e) {}
+  setLoad(0.9);
+  setTimeout(() => { setLoad(1); setTimeout(() => { if (body.classList.contains('state-loading')) body.className = 'state-intro'; }, 500); }, Math.max(0, 900 - (performance.now() - t0)));
+});
 window.__app = { toMenu, openChapter, reader, enterSite, stage, get mode() { return mode; } };

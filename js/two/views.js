@@ -23,7 +23,7 @@ export function defineViews(stage, { onBestia }) {
     ],
     dyn(ctx, L, st) {
       mist(ctx, L, 560, 0.07, st.time);
-      art(ctx, L, (c) => { const a = 0.55 + 0.45 * Math.sin(st.time * 2.2); const g = c.createRadialGradient(800, 610, 0, 800, 610, 16); g.addColorStop(0, C.glowA(0.95 * a)); g.addColorStop(1, C.glowA(0)); c.fillStyle = g; c.beginPath(); c.arc(800, 610, 16, 0, 7); c.fill(); if (st.key === 'bosque' && st.tp > 0.25) callout(c, [800, 606], [880, 520], 'Algo rojo, entre los bambúes', { size: 12 }); });
+      art(ctx, L, (c) => { const a = 0.55 + 0.45 * Math.sin(st.time * 2.2); const g = c.createRadialGradient(800, 600, 0, 800, 600, 34); g.addColorStop(0, C.glowA(0.55 * a)); g.addColorStop(1, C.glowA(0)); c.fillStyle = g; c.beginPath(); c.arc(800, 600, 34, 0, 7); c.fill(); brush(c, [[800, 640], [801, 612]], { w: 1.6, color: '#3a3533', profile: 'even', dry: 0, seed: 2, n: 6 }); c.globalAlpha = 0.75 + 0.25 * a; stamp(c, lilySprite(0.25), 800, 606, 1); c.globalAlpha = 1; if (st.key === 'bosque' && st.tp > 0.25) callout(c, [800, 596], [880, 510], 'Algo rojo, entre los bambúes', { size: 12 }); });
     },
   });
 
@@ -206,7 +206,7 @@ export function defineViews(stage, { onBestia }) {
         ground(c, EC[1] + 120, 0.05, 84);
         figure(c, EC[0], EC[1] + 120, 190, { mark: true, rim: C.boneA(0.4) });
         weaponAt(c, ...figurePoint(EC[0], EC[1] + 120, 190, {}, 'hand'), 0.36, -0.4);
-        arcs.forEach((A) => { for (let k = 0; k < A.c.count; k++) { const a = A.a0 + (A.a1 - A.a0) * ((k + 0.5) / A.c.count); creature(c, A.c.id, EC[0] + Math.cos(a) * (ER + 48), EC[1] + Math.sin(a) * (ER + 48), A.c.id === 'dragon' ? 0.85 : 1.1); } });
+        arcs.forEach((A) => { for (let k = 0; k < A.c.count; k++) { const a = A.a0 + (A.a1 - A.a0) * ((k + 0.5) / A.c.count); creature(c, A.c.id, EC[0] + Math.cos(a) * (ER + 52), EC[1] + Math.sin(a) * (ER + 52), A.c.id === 'dragon' ? 1.05 : 1.55); } });
         c.fillStyle = '#f1ebe2'; c.font = '700 22px "Shippori Mincho B1", serif'; c.textAlign = 'center'; c.fillText('30 criaturas', EC[0], EC[1] - 112); axisLabel(c, 'ATACARON EL VALLE · TOCA UN NOMBRE', EC[0], EC[1] - 92);
       }) },
     ],

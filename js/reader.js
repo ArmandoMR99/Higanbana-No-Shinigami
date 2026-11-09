@@ -54,7 +54,7 @@ export class Reader {
       else if (s.head) sec.innerHTML = `<div class="scroll"><div class="chapter-head"><div class="ch-num">Capítulo ${ch.roman}</div><div class="ch-kanji" lang="ja">${ch.kanji}</div><div class="ch-name">${ch.name}</div></div><p class="cue">Baja para leer <span>↓</span></p></div>`;
       else if (s.end) {
         sec.innerHTML = `<div class="scroll"><div class="chapter-head"><div class="ch-num">Fin del capítulo ${ch.roman}</div><div class="ch-kanji" lang="ja">${ch.kanji}</div></div>
-          <div class="end-actions"><button data-go="${next.id}"><small>Capítulo ${next.roman}</small>${next.kanji} · ${next.name}</button><button data-go="menu"><small>Esc</small>Volver a los capítulos</button></div></div>`;
+          <div class="end-actions"><button data-go="${next.id}"><small>Capítulo ${next.roman}</small>${next.kanji} · ${next.name}</button><button data-go="menu"><small>Esc</small>Volver a los capítulos</button>${ch.id === 3 ? '<button data-go="about" class="about-link"><small>Créditos</small>Sobre el proyecto</button>' : ''}</div></div>`;
         sec.querySelectorAll('button').forEach((b) => b.addEventListener('click', () => this.onEnd && this.onEnd(b.dataset.go)));
       } else if (s.len > 1 && s.paras.length > 2) {
         const pages = []; for (let k = 0; k < s.paras.length; k += 2) pages.push(s.paras.slice(k, k + 2));

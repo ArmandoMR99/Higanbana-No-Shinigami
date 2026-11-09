@@ -4,8 +4,16 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Higanbana no Shinigami</title>
-  <meta name="description" content="Kenji y la flor de los muertos: una historia interactiva en 3D, en tres capítulos.">
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%9D%80%3C/text%3E%3C/svg%3E">
+  <meta name="description" content="Kenji y la flor de los muertos: una historia interactiva en tres capítulos, con ilustraciones en tinta, 3D y música original.">
+  <meta name="theme-color" content="#110e0e">
+  <meta name="author" content="Armando (ArmandoMR99)">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="彼岸花の死神 · Higanbana no Shinigami">
+  <meta property="og:description" content="Una historia interactiva en tinta y sangre: tres capítulos, ilustraciones 2D, 3D y música original generada en el navegador.">
+  <meta property="og:image" content="https://armandomr99.github.io/Higanbana-No-Shinigami/assets/og.jpg">
+  <meta property="og:url" content="https://armandomr99.github.io/Higanbana-No-Shinigami/">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500&family=Shippori+Mincho+B1:wght@500;700;800&family=Zen+Old+Mincho:wght@400;700&display=swap" rel="stylesheet">
@@ -20,6 +28,12 @@
   </script>
 </head>
 <body class="state-loading">
+  <!-- PANTALLA DE CARGA -->
+  <div id="loader" aria-label="Cargando">
+    <svg viewBox="0 0 120 120" aria-hidden="true"><circle class="ring-bg" cx="60" cy="60" r="52"/><circle class="ring" cx="60" cy="60" r="52"/></svg>
+    <span class="loader-jp" lang="ja">彼岸花</span>
+    <span class="loader-txt">preparando la tinta</span>
+  </div>
   <canvas id="gl" aria-hidden="true"></canvas>
   <div id="stage" aria-hidden="true"></div>
   <div id="fx" aria-hidden="true"></div>
@@ -61,6 +75,24 @@
     <div class="card-body"></div>
   </div>
 
+  <!-- SOBRE EL PROYECTO -->
+  <div id="about" role="dialog" aria-modal="true" aria-label="Sobre el proyecto" hidden>
+    <div class="about-inner">
+      <button class="about-close" aria-label="Cerrar">×</button>
+      <div class="about-jp" lang="ja">彼岸花の死神</div>
+      <h2>Higanbana no Shinigami</h2>
+      <p class="about-lead">Una historia interactiva sobre Kenji, un muchacho del valle de Yomigawa marcado por la flor de los muertos. Tres capítulos que mezclan lectura, ilustración en tinta, visualización de datos, 3D y música original.</p>
+      <div class="about-grid">
+        <div><h3>Historia y dirección</h3><p>Armando (ArmandoMR99)</p></div>
+        <div><h3>Capítulos</h3><p>秋分 Cuando florecen los muertos<br>雨夜 La noche que llovió sangre<br>冬 Siete inviernos</p></div>
+        <div><h3>Técnica</h3><p>Three.js (lirio y Kusarigama en 3D, bloom, tinta en postproceso) · Canvas 2D (ilustraciones y gráficas a pincel) · Web Audio (banda sonora generada en el navegador)</p></div>
+        <div><h3>Cómo se recorre</h3><p>Rueda, gesto o flechas para avanzar · Esc para volver · toca los barrios y las bestias para abrir sus fichas</p></div>
+      </div>
+      <p class="about-foot">Todo el arte, la música y los datos son originales y se generan con código.</p>
+    </div>
+  </div>
+
+  <canvas id="trail" aria-hidden="true"></canvas>
   <div id="cursor" aria-hidden="true"></div>
 
   <svg width="0" height="0" style="position:absolute" aria-hidden="true">
