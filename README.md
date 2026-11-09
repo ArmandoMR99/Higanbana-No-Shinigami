@@ -3,7 +3,7 @@
 Historia interactiva en 3D, en tres capítulos, sobre Kenji y la flor de los muertos.
 Sitio estático para GitHub Pages: HTML, CSS y JavaScript con [Three.js](https://threejs.org) (incluido en `vendor/`), sin paso de compilación.
 
-**Ver en línea:** https://armandomr99.github.io/higanbana-no-shinigami/
+**Ver en línea:** https://armandomr99.github.io/Higanbana-No-Shinigami/
 
 ## Estado: etapa 2 (2D + 3D selectivo)
 
