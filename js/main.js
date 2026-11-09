@@ -7,129 +7,150 @@ import { CSS2DRenderer } from 'three/addons/renderers/CSS2DRenderer.js';
 import { InkShader } from './ink.js';
 import { CHAPTERS } from './story.js';
 import { Reader } from './reader.js';
-import { hideCard, cardOpen, showBestia } from './ui.js';
-import { makeValley } from './valley.js';
+import { hideCard, cardOpen, showBestia, showEma } from './ui.js';
 import { clamp, smooth, lerp } from './geo.js';
 import { buildIntro } from './scenes/intro.js';
-import { buildCh1 } from './scenes/ch1.js';
-import { buildCh2 } from './scenes/ch2.js';
-import { buildCh3 } from './scenes/ch3.js';
+import { buildForge } from './scenes/forge.js';
+import { Stage } from './two/stage.js';
+import { FX } from './two/fx.js';
+import { defineValley } from './two/valley2d.js';
+import { defineViews, paintPanel } from './two/views.js';
+import { canvas } from './two/brush.js';
+import { Music } from './audio.js';
 
-const canvas = document.getElementById('gl');
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
+// ---------- Qué acompaña a cada pasaje ----------
+// v: escena 2D · s: escena 3D (lily | forge) · fx: partículas · mood: música
+const SPEC = {
+  1: {
+    bosque: { v: 'bosque', fx: { leaves: 1 }, mood: 'calm' }, bosque2: { v: 'bosque', fx: { leaves: 0.6 }, mood: 'calm' },
+    flor: { v: 'flor', fx: { petals: 0.25 }, mood: 'calm' }, rio: { v: 'rio', mood: 'calm' },
+    ronin: { v: 'ronin', fx: { leaves: 0.4 }, mood: 'calm' }, ronin2: { v: 'ronin', mood: 'dark' },
+    valle: { v: 'valle', fx: { rain: 1, embers: 0.6 }, mood: 'storm' }, almacen: { v: 'almacen', fx: { rain: 0.35 }, mood: 'dark' },
+  },
+  2: {
+    despertar: { v: 'despertar', fx: { embers: 0.4 }, mood: 'dark' }, despertar2: { s: 'forge', mood: 'forge' },
+    forja: { s: 'forge', mood: 'forge' }, arma: { s: 'forge', mood: 'forge' }, arma2: { s: 'forge', mood: 'fight' },
+    latido: { v: 'latido', fx: { rain: 0.8 }, mood: 'fight' }, anillo: { v: 'enso', fx: { rain: 0.5 }, mood: 'fight' },
+    amanecer: { v: 'valle', fx: { rain: 0.6, embers: 0.4 }, mood: 'dawn' }, ruinas: { v: 'ruinas', fx: { ash: 1 }, mood: 'dawn' },
+    partida: { v: 'ruinas', fx: { ash: 0.8 }, mood: 'dawn' }, partida2: { v: 'ruinas', fx: { ash: 0.6 }, mood: 'dark' }, camino: { v: 'camino', fx: { ash: 0.5 }, mood: 'calm' },
+  },
+  3: {
+    recuento: { v: 'recuento', fx: { ash: 0.6 }, mood: 'dawn' }, viaje: { v: 'emaki', mood: 'calm' },
+    pesadilla: { v: 'invierno', fx: { snow: 1 }, mood: 'snow' }, pregunta: { v: 'invierno', fx: { snow: 1 }, mood: 'snow' }, leyenda: { v: 'invierno', fx: { snow: 1 }, mood: 'snow' },
+    invierno: { v: 'invierno', fx: { snow: 0.7, embers: 0.5 }, mood: 'fire' }, invierno2: { v: 'invierno', fx: { snow: 0.5, embers: 0.5 }, mood: 'fire' },
+    eleccion: { v: 'invierno', fx: { snow: 0.8 }, mood: 'snow' }, eleccion2: { v: 'invierno', fx: { snow: 0.6 }, mood: 'redemption' },
+    final: { s: 'lily', fx: { petals: 1 }, mood: 'redemption' },
+  },
+};
+
+// ---------- 3D ----------
+const glCanvas = document.getElementById('gl');
+const renderer = new THREE.WebGLRenderer({ canvas: glCanvas, antialias: true, powerPreference: 'high-performance' });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 1.6));
 renderer.setSize(innerWidth, innerHeight);
-renderer.setClearColor('#0c0a0a');
-
-const camera = new THREE.PerspectiveCamera(42, innerWidth / innerHeight, 0.05, 260);
+const camera = new THREE.PerspectiveCamera(42, innerWidth / innerHeight, 0.05, 200);
 const composer = new EffectComposer(renderer);
 const renderPass = new RenderPass(new THREE.Scene(), camera);
-const outputPass = new OutputPass();
 const ink = new ShaderPass(InkShader);
-composer.addPass(renderPass); composer.addPass(outputPass); composer.addPass(ink);
+ink.uniforms.edge.value = 0.7;
+composer.addPass(renderPass); composer.addPass(new OutputPass()); composer.addPass(ink);
 const labels = new CSS2DRenderer({ element: document.getElementById('labels') });
 labels.setSize(innerWidth, innerHeight);
 
 const body = document.body;
+const music = new Music();
+const app = { camera, mouse: new THREE.Vector2() };
+const lily = buildIntro(app);
+const forge = buildForge(app, { onPiece: (k) => music.sfx(k) });
+const scenes3d = { lily, forge };
+
+// ---------- 2D ----------
+const stage = new Stage(document.getElementById('stage'));
+const fx = new FX(document.getElementById('fx'));
+defineValley(stage, { onBarrio: (b) => { showEma(b); music.sfx('open'); } });
+defineViews(stage, { onBestia: (id, cb) => { showBestia(id, cb); music.sfx('open'); } });
+
 const reader = new Reader(document.getElementById('reader'), { onEnd: (go) => (go === 'menu' ? toMenu() : openChapter(+go)) });
 
-// ---------- Escenas ----------
-const app = { THREE, camera, renderer, reader, valley: null, mouse: new THREE.Vector2(), labelsEl: document.getElementById('labels') };
-app.valley = makeValley({ onBarrio: (b) => import('./ui.js').then((u) => u.showEma(b)) });
-const intro = buildIntro(app);
-const chapters = [buildCh1(app), buildCh2(app), buildCh3(app)];
-let active = intro;           // escena que se renderiza
-let mode = 'intro';           // intro | menu | reader
-let chapter = null;           // índice de capítulo abierto
-let hover = 0;                // panel del menú iluminado
-const cam = { pos: new THREE.Vector3(0, 1.6, 6), look: new THREE.Vector3(0, 1.6, 0), shift: 0, shiftTarget: 0 };
-let fly = null;               // vuelo de cámara entre menú y capítulo
-let fadeT = 0;
+let mode = 'intro', chapter = 0, hover = 0;
+const cam = { pos: new THREE.Vector3(...lily.frames.menu.pos), look: new THREE.Vector3(...lily.frames.menu.look), shift: 0 };
+let active3d = lily;
+let fly = null;
 
-function setActive(sc) {
-  if (active === sc) return;
-  if (active && active.exit) active.exit();
-  active = sc;
-  app.labelsEl.innerHTML = '';
-  if (sc.enter) sc.enter();
-  renderPass.scene = sc.scene;
+function set3d(sc) {
+  if (active3d === sc) return;
+  active3d = sc; renderPass.scene = sc.scene; document.getElementById('labels').innerHTML = '';
 }
-renderPass.scene = intro.scene;
+renderPass.scene = lily.scene;
 
 // ---------- Menú ----------
 const menu = document.getElementById('menu');
 menu.innerHTML = CHAPTERS.map((c, i) => `
   <button class="panel${i === 0 ? ' on' : ''}" data-i="${i}" aria-label="Capítulo ${c.roman}: ${c.name}">
+    <span class="art"></span>
     <span class="kanji" lang="ja">${c.kanji}</span>
     <span class="num">${c.roman}</span>
     <span class="sub">${c.roman} · ${c.sub}</span>
     <span class="name">${c.name}</span>
   </button>`).join('') + '<div class="menu-foot"><span><b>●</b>Clic · Entrar</span><span><b>esc</b>Volver</span></div>';
 const panels = [...menu.querySelectorAll('.panel')];
+function paintPanels() {
+  panels.forEach((p, i) => { const box = p.querySelector('.art'); box.innerHTML = ''; const r = p.getBoundingClientRect(); if (r.width < 10) return; const cv = canvas(r.width, r.height); paintPanel(i, cv); box.appendChild(cv); });
+}
 panels.forEach((p, i) => {
   p.addEventListener('mouseenter', () => selectPanel(i));
   p.addEventListener('focus', () => selectPanel(i));
   p.addEventListener('click', () => openChapter(i + 1));
 });
-function selectPanel(i) {
-  hover = i;
-  panels.forEach((p, k) => p.classList.toggle('on', k === i));
-  if (mode === 'menu') { setActive(chapters[i]); const f = chapters[i].frames.menu; cam.pos.set(...f.pos); cam.look.set(...f.look); }
-}
-function panelShift(i) {
-  const r = panels[i].getBoundingClientRect();
-  return (r.left + r.width / 2) - innerWidth / 2;
-}
+function selectPanel(i) { if (hover !== i) music.sfx('open'); hover = i; panels.forEach((p, k) => p.classList.toggle('on', k === i)); }
 
 function toMenu() {
   hideCard();
   mode = 'menu';
   body.className = 'state-menu';
-  fly = null;
-  selectPanel(hover);
+  set3d(lily); lily.reset();
+  document.getElementById('forge-list').classList.remove('on');
+  const f = lily.frames.menu; cam.pos.set(...f.pos); cam.look.set(...f.look);
+  music.setMood('menu');
+  requestAnimationFrame(paintPanels);
 }
 
 function enterSite() {
   if (mode !== 'intro') return;
+  music.start(); music.sfx('enter'); soundBtn.classList.remove('off'); soundBtn.title = 'Silenciar';
   body.classList.add('leaving-intro');
-  intro.burst();
+  lily.burst();
   setTimeout(() => { body.classList.remove('leaving-intro'); toMenu(); }, 1500);
 }
 document.getElementById('intro').addEventListener('click', enterSite);
 
 function openChapter(n) {
-  const i = n - 1;
   hideCard();
-  hover = i;
+  const i = n - 1; hover = i;
   panels.forEach((p, k) => p.classList.toggle('on', k === i));
-  const sc = chapters[i];
   const go = () => {
-    setActive(sc);
-    chapter = i;
+    chapter = n;
     reader.load(CHAPTERS[i], CHAPTERS);
+    if (n === 2) forge.setPlaced(0);
     mode = 'reader';
     body.className = `state-reader ch-${n}`;
-    const from = { pos: cam.pos.clone(), look: cam.look.clone() };
-    fly = { from, t: 0 };
-    if (sc.start) sc.start();
+    fly = { t: 0 };
   };
-  if (mode === 'menu') { body.classList.add('opening'); setTimeout(go, 850); }
-  else { fadeT = 1; go(); }
+  if (mode === 'menu') { body.classList.add('opening'); setTimeout(go, 850); } else go();
 }
 
 // ---------- Entrada ----------
+const cursor = document.getElementById('cursor');
 addEventListener('pointermove', (e) => {
   app.mouse.set((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
   cursor.style.transform = `translate(${e.clientX}px, ${e.clientY}px)`;
-  const t = e.target;
-  const hot = t.closest && (t.closest('button,.btn,.panel') || (mode === 'reader' && active.pick && active.pick(app.mouse, true)));
+  const hot = e.target.closest && (e.target.closest('button,.panel') || (mode === 'reader' && glCanvas.style.opacity > 0.5 && active3d.pick && active3d.pick(app.mouse, true)));
   cursor.classList.toggle('hot', !!hot);
 });
-const cursor = document.getElementById('cursor');
 addEventListener('click', (e) => {
-  if (mode !== 'reader' || !active.pick) return;
-  if (e.target.closest('button,.btn,.scroll p,#card')) return;
-  active.pick(app.mouse, false);
+  if (mode !== 'reader' || !active3d.pick || glCanvas.style.opacity < 0.5) return;
+  if (e.target.closest('button,.scroll p,#card')) return;
+  active3d.pick(app.mouse, false);
 });
 addEventListener('keydown', (e) => {
   if (e.key === 'Escape') { if (cardOpen()) hideCard(); else if (mode === 'reader') toMenu(); return; }
@@ -146,89 +167,96 @@ addEventListener('keydown', (e) => {
   }
 });
 document.getElementById('btn-esc').addEventListener('click', toMenu);
-document.getElementById('btn-bestias').addEventListener('click', () => showBestia('dragon', (id) => chapters[1].highlight && chapters[1].highlight(id)));
+document.getElementById('btn-bestias').addEventListener('click', () => showBestia('dragon'));
+const soundBtn = document.getElementById('btn-sound');
+soundBtn.addEventListener('click', (e) => { e.stopPropagation(); const on = music.toggle(); soundBtn.classList.toggle('off', !on); soundBtn.title = on ? 'Silenciar' : 'Activar sonido'; });
 
 addEventListener('resize', () => {
   camera.aspect = innerWidth / innerHeight;
   renderer.setSize(innerWidth, innerHeight); composer.setSize(innerWidth, innerHeight); labels.setSize(innerWidth, innerHeight);
   ink.uniforms.resolution.value.set(innerWidth * renderer.getPixelRatio(), innerHeight * renderer.getPixelRatio());
+  if (mode === 'menu') paintPanels();
 });
 ink.uniforms.resolution.value.set(innerWidth * renderer.getPixelRatio(), innerHeight * renderer.getPixelRatio());
 
-// ---------- Cámara a partir de los encuadres de cada pasaje ----------
-const tmpA = new THREE.Vector3(), tmpB = new THREE.Vector3();
-function frameAt(sc, key, tIn) {
-  const f = sc.frames[key] || sc.frames.menu;
-  const p = new THREE.Vector3(...f.pos), l = new THREE.Vector3(...f.look);
-  if (f.to && tIn > 0) { const e = smooth(clamp(tIn)); p.lerp(tmpA.set(...f.to.pos), e); l.lerp(tmpB.set(...f.to.look), e); }
-  return { p, l, f };
-}
-function readerCamera() {
-  const S = reader.sections; if (!S.length) return { fade: 0 };
-  const i = reader.i, t = reader.t, A = S[i], B = S[i + 1] || A;
-  const L = A.len || 1;
-  const tIn = L > 1 ? clamp(t * L / (L - 1)) : 0;        // avance dentro del pasaje largo
-  const k = L > 1 ? clamp(t * L - (L - 1)) : t;          // transición hacia el siguiente
-  const a = frameAt(active, A.key, A.len > 1 ? tIn : 0);
-  const b = frameAt(active, B.key, 0);
-  let fade = 0;
-  if (b.f.cut && B !== A) {
-    const e = clamp(k);
-    if (e < 0.5) { cam.pos.copy(a.p); cam.look.copy(a.l); } else { cam.pos.copy(b.p); cam.look.copy(b.l); }
-    fade = 1 - Math.abs(e - 0.5) * 2; fade = smooth(clamp(fade * 1.6));
-  } else {
-    const e = smooth(clamp(k));
-    cam.pos.lerpVectors(a.p, b.p, e); cam.look.lerpVectors(a.l, b.l, e);
+// ---------- Estado de cada escena según el pasaje ----------
+function viewParams(ch, key, t, L) {
+  const tIn = L > 1 ? clamp(t * L / (L - 1)) : t;
+  const P = { t };
+  if (key === 'valle') P.valley = { m: clamp(t * L / (L - 0.6)) * 20 };
+  else if (key === 'almacen' || key === 'despertar') P.valley = { m: 20 };
+  if (key === 'amanecer') {
+    const k = clamp(t * L / (L - 0.5)), m = 20 + clamp(k / 0.75) * 40;
+    P.valley = { m, dawn: clamp((k - 0.8) / 0.2), heat: clamp((m - 35) / 25), trail: clamp((m - 32) / 26) };
   }
-  const dimA = A.cine ? 1 - Math.pow(Math.abs(t - 0.5) * 2, 6) * 0 : 0, dimB = B.cine ? 1 : 0;
-  const dim = lerp(dimA, dimB, smooth(clamp(k)));
-  return { fade: Math.max(fade, dim * 0.72) };
+  if (key === 'recuento') P.recuento = { cols: clamp(tIn * 1.9), lan: clamp((tIn - 0.6) * 2.6) };
+  return P;
 }
+
+const camFrame = (sc, key) => { const f = sc.frames[key] || sc.frames.menu; return { p: new THREE.Vector3(...f.pos), l: new THREE.Vector3(...f.look) }; };
 
 // ---------- Bucle ----------
 const clock = new THREE.Clock();
+const fade = document.getElementById('fade');
 function loop() {
   const dt = Math.min(clock.getDelta(), 0.05), time = clock.elapsedTime;
-  let fade = 0;
-  if (mode === 'intro') {
-    const f = intro.frames.menu; cam.pos.set(...f.pos); cam.look.set(...f.look);
-    cam.shiftTarget = 0;
-  } else if (mode === 'menu') {
-    cam.shiftTarget = panelShift(hover);
-  } else if (mode === 'reader') {
-    const r = readerCamera();
-    fade = r.fade;
-    cam.shiftTarget = innerWidth > 760 ? Math.min(innerWidth * 0.17, 260) : 0;
-    if (fly) {
-      fly.t += dt / 1.6;
-      const e = smooth(clamp(fly.t));
-      cam.pos.lerpVectors(fly.from.pos, cam.pos, e); cam.look.lerpVectors(fly.from.look, cam.look, e);
-      if (fly.t >= 1) fly = null;
+  let w3 = 1, fxT = {}, dim = 0;
+  const weights = {};
+
+  if (mode === 'intro' || mode === 'menu') {
+    set3d(lily);
+    w3 = 1;
+    if (mode === 'menu') fxT = { petals: 0.15 };
+  } else {
+    const S = reader.sections, i = reader.i, t = reader.t;
+    const A = S[i], B = S[i + 1] || A, L = A.len || 1;
+    const k = L > 1 ? clamp(t * L - (L - 1)) : t;
+    const e = smooth(clamp(k));
+    const sa = SPEC[chapter][A.key] || {}, sb = SPEC[chapter][B.key] || sa;
+    const same = (sa.v && sa.v === sb.v) || (sa.s && sa.s === sb.s);
+    const wa = same ? 1 : 1 - e, wb = same ? 0 : e;
+    const views = {};
+    if (sa.v) { weights[sa.v] = (weights[sa.v] || 0) + wa; views[sa.v] = { key: A.key, ...viewParams(chapter, A.key, t, L) }; }
+    if (sb.v && wb > 0) { weights[sb.v] = (weights[sb.v] || 0) + wb; if (!views[sb.v]) views[sb.v] = { key: B.key, ...viewParams(chapter, B.key, 0, B.len || 1) }; }
+    w3 = (sa.s ? wa : 0) + (sb.s ? wb : 0);
+    // 3D: escena y encuadre
+    const s3 = sa.s || sb.s;
+    if (s3) {
+      const sc = scenes3d[s3]; set3d(sc);
+      const fa = camFrame(sc, sa.s ? A.key : B.key), fb = camFrame(sc, sb.s ? B.key : A.key);
+      const ce = sa.s && sb.s ? e : 0;
+      cam.pos.lerpVectors(fa.p, fb.p, ce); cam.look.lerpVectors(fa.l, fb.l, ce);
+      if (sc.update) sc.update({ key: sa.s ? A.key : B.key, t: sa.s ? t : 0 });
     }
-    const S = reader.sections[reader.i];
-    if (S && active.update) active.update({ key: S.key, t: reader.t, i: reader.i, sec: S, sections: reader.sections, time, dt });
+    for (const kk of ['rain', 'snow', 'petals', 'leaves', 'embers', 'ash']) fxT[kk] = (sa.fx?.[kk] || 0) * wa + (sb.fx?.[kk] || 0) * wb;
+    dim = lerp(A.cine ? 1 : 0, B.cine ? 1 : 0, e) * 0.62;
+    music.setMood(e < 0.5 ? sa.mood : sb.mood);
+    stage.frame(weights, { key: A.key, t, time, dt, ch: chapter, views });
+    if (fly) { fly.t += dt / 1.2; if (fly.t >= 1) fly = null; }
   }
-  if (active.tick) active.tick(dt, time, mode);
-  fadeT = Math.max(0, fadeT - dt * 1.5);
+  if (mode !== 'reader') stage.frame({}, { time, dt });
+  fx.frame(fxT, dt, time);
+  fade.style.opacity = Math.max(dim, fly ? 1 - smooth(clamp(fly.t)) : 0);
+  music.tick();
 
-  // paralaje suave con el ratón
-  cam.shift = lerp(cam.shift, cam.shiftTarget, 1 - Math.pow(0.002, dt));
-  camera.position.copy(cam.pos);
-  camera.lookAt(cam.look);
-  const par = active.parallax ?? 0.25;
-  camera.translateX(app.mouse.x * par); camera.translateY(app.mouse.y * par * 0.6);
-  camera.lookAt(cam.look);
-  camera.setViewOffset(innerWidth, innerHeight, -cam.shift, 0, innerWidth, innerHeight);
-  if (active.fov && camera.fov !== active.fov) { camera.fov = active.fov; }
-  camera.updateProjectionMatrix();
-
-  ink.uniforms.time.value = time;
-  ink.uniforms.fade.value = Math.max(fade, fadeT);
-  composer.render();
-  labels.render(active.scene, camera);
+  // 3D solo cuando se ve
+  glCanvas.style.opacity = w3.toFixed(3);
+  if (w3 > 0.003) {
+    if (active3d.tick) active3d.tick(dt, time, mode);
+    const shift = mode === 'reader' && innerWidth > 760 ? Math.min(innerWidth * 0.17, 260) : 0;
+    cam.shift = lerp(cam.shift, shift, 1 - Math.pow(0.002, dt));
+    camera.position.copy(cam.pos); camera.lookAt(cam.look);
+    const par = active3d.parallax ?? 0.2;
+    camera.translateX(app.mouse.x * par); camera.translateY(app.mouse.y * par * 0.6); camera.lookAt(cam.look);
+    camera.setViewOffset(innerWidth, innerHeight, -cam.shift, 0, innerWidth, innerHeight);
+    camera.updateProjectionMatrix();
+    ink.uniforms.time.value = time;
+    composer.render();
+    labels.render(active3d.scene, camera);
+  }
   requestAnimationFrame(loop);
 }
 
 body.className = 'state-intro';
 loop();
-window.__app = { app, toMenu, openChapter, reader, enterSite, get mode() { return mode; } };
+window.__app = { toMenu, openChapter, reader, enterSite, stage, get mode() { return mode; } };

@@ -5,28 +5,31 @@ Sitio estático para GitHub Pages: HTML, CSS y JavaScript con [Three.js](https:/
 
 **Ver en línea:** https://armandomr99.github.io/higanbana-no-shinigami/
 
-## Estado: boceto (etapa 1)
+## Estado: etapa 2 (2D + 3D selectivo)
 
-Todo el recorrido funciona de punta a punta con escenas sencillas; el pulido viene después.
-
-- Portada: un higanbana 3D que reacciona al cursor; al hacer clic los trazos de tinta forman el menú.
-- Menú de capítulos al estilo pergamino vertical (I 秋分 · II 雨夜 · III 冬).
-- Lectura por pasajes con scroll (o flechas ↑ ↓), Esc para volver, frases a pantalla completa e indicador de progreso por capítulo.
-- Regla visual: todo en tinta y gris, solo el rojo del higanbana (y el azul de los onis) tiene color. Lo hace el shader de `js/ink.js`.
+- **3D solo en lo importante:** el lirio (portada y cierre, cuando se rearma) y la Kusarigama (forja y mini juego).
+- **2D en todo lo demás**, al estilo de la infografía Kusarigama Radiata: papel carbón, pincel claro, carmesí, marcos finos y etiquetas con líneas guía. Escenas en capas con paralaje.
+- El valle es un mapa pintado con incienso, fuego, criaturas y emas; las gráficas son trazos de pincel (línea de humo, latido, ensō de bestias, columnas de humo, 312 farolillos, emakimono del viaje, marca contra memoria).
+- **Música generada con código** (Web Audio): bordón, viento, lluvia, koto en escala hirajoshi, taiko y latido, según el pasaje. Botón de silencio arriba a la derecha.
 
 ## Estructura
 
 ```
 index.html            página única
 css/style.css         estilos, paleta y tipografía
-js/main.js            render, cámara, estados (portada → menú → lectura)
-js/ink.js             postproceso de tinta
+js/main.js            estados (portada → menú → lectura) y qué acompaña a cada pasaje
 js/story.js           texto de los capítulos y datos (tablas A, B y C de la biblia)
 js/reader.js          motor de lectura por pasajes
 js/ui.js              ema de barrio y ficha de bestia
-js/geo.js             geometría hecha con código (lirio, arma, figuras, partículas)
-js/valley.js          el valle de Yomigawa (mapa, incienso, criaturas, columnas, farolillos)
-js/scenes/            escenas de la portada y de cada capítulo
+js/audio.js           música generativa y efectos
+js/two/brush.js       pincel 2D: papel, trazos, aguadas, montañas, bambú, lirio, siluetas, etiquetas
+js/two/stage.js       escenario 2D por capas con paralaje
+js/two/valley2d.js    el valle (noche del ataque y recuento)
+js/two/views.js       el resto de escenas 2D y el arte del menú
+js/two/fx.js          lluvia, nieve, pétalos, hojas, brasas
+js/scenes/intro.js    3D: el lirio
+js/scenes/forge.js    3D: la Kusarigama y la forja
+js/geo.js, js/ink.js  geometría 3D y postproceso de tinta
 vendor/three/         Three.js r169 (licencia MIT)
 ```
 
