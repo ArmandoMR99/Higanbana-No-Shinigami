@@ -1,6 +1,7 @@
 // Geometría hecha con código: lirio, Kenji, casas, bambú, arma, partículas.
 import * as THREE from 'three';
 import { CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
 export const RED = new THREE.Color('#c21a1f');
 export const GLOW = new THREE.Color('#e0303a');
@@ -40,74 +41,110 @@ export function ribbon(curve, widthFn, segs = 24, twist = 0) {
   return g;
 }
 
-// Un higanbana (Lycoris radiata): umbela de 5-6 flores, pétalos rizados hacia atrás y estambres largos.
-export function makeLily({ florets = 6, stem = 2.2, scale = 1, seed = 7 } = {}) {
-  const R = seeded(seed);
-  const root = new THREE.Group();
-  const red = mat.red();
-  const redV = new THREE.MeshPhysicalMaterial({ color: '#c0141c', emissive: '#4a0306', roughness: 0.45, sheen: 0.6, sheenColor: new THREE.Color('#ff6060'), side: THREE.DoubleSide, vertexColors: true });
-  const stamenMat = new THREE.MeshStandardMaterial({ color: '#c9141c', emissive: '#5a0508', roughness: 0.5 });
-  const stemMat = mat.gray('#3c3a36');
-
-  const stemCurve = new THREE.CatmullRomCurve3([
-    new THREE.Vector3(0, 0, 0), new THREE.Vector3(0.05, stem * 0.5, 0.02), new THREE.Vector3(0, stem, 0)]);
-  root.add(new THREE.Mesh(new THREE.TubeGeometry(stemCurve, 20, 0.028, 6), stemMat));
-
-  const head = new THREE.Group();
-  head.position.y = stem;
-  root.add(head);
-  root.userData.petals = [];
-
-  for (let f = 0; f < florets; f++) {
-    const fl = new THREE.Group();
-    const az = (f / florets) * Math.PI * 2 + R() * 0.3;
-    const tilt = 0.75 + R() * 0.25;
-    // pedicelo
-    const ped = new THREE.Vector3(Math.cos(az) * 0.22, 0.12, Math.sin(az) * 0.22);
-    const pc = new THREE.CatmullRomCurve3([new THREE.Vector3(), ped.clone().multiplyScalar(0.5).add(new THREE.Vector3(0, 0.06, 0)), ped]);
-    head.add(new THREE.Mesh(new THREE.TubeGeometry(pc, 6, 0.012, 5), stemMat));
-    fl.position.copy(ped);
-    fl.rotation.set(Math.sin(az) * tilt, 0, -Math.cos(az) * tilt, 'XZY');
-    fl.lookAt(ped.clone().multiplyScalar(4).add(new THREE.Vector3(0, 0.6, 0)).add(head.position));
-    fl.rotateX(Math.PI / 2);
-    head.add(fl);
-
-    // 6 tépalos estrechos, ondulados y curvados hacia atrás
-    for (let p = 0; p < 6; p++) {
-      const a = (p / 6) * Math.PI * 2;
-      const dir = new THREE.Vector3(Math.cos(a), 0, Math.sin(a));
-      const pts = [];
-      for (let i = 0; i <= 6; i++) {
-        const t = i / 6;
-        const out = 0.05 + t * 0.34;
-        const up = Math.sin(t * Math.PI * 0.55) * 0.22 - t * t * 0.32; // sube y se enrosca hacia atrás
-        const wav = Math.sin(t * 9 + p) * 0.012;
-        pts.push(dir.clone().multiplyScalar(out).add(new THREE.Vector3(0, up + 0.02, 0)).add(new THREE.Vector3(-dir.z * wav, 0, dir.x * wav)));
-      }
-      const g = ribbon(new THREE.CatmullRomCurve3(pts), (t) => 0.034 * Math.sin(Math.PI * Math.min(1, t * 1.15 + 0.06)) + 0.004, 18, 0.6);
-      { const uv = g.attributes.uv, col = []; for (let q = 0; q < uv.count; q++) { const t = uv.getY(q), e = uv.getX(q); const k = 0.5 + t * 0.75 - Math.abs(e - 0.5) * 0.15; col.push(k, k * 0.9, k * 0.9); } g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3)); }
-      const m = new THREE.Mesh(g, redV);
-      fl.add(m);
-      root.userData.petals.push(m);
-    }
-    // 6 estambres largos y arqueados
-    for (let s = 0; s < 6; s++) {
-      const a = (s / 6) * Math.PI * 2 + 0.3;
-      const dir = new THREE.Vector3(Math.cos(a), 0, Math.sin(a));
-      const pts = [new THREE.Vector3(0, 0.02, 0)];
-      for (let i = 1; i <= 5; i++) {
-        const t = i / 5;
-        pts.push(dir.clone().multiplyScalar(t * 0.36).add(new THREE.Vector3(0, Math.sin(t * Math.PI * 0.8) * 0.42 + t * 0.06, 0)));
-      }
-      const c = new THREE.CatmullRomCurve3(pts);
-      fl.add(new THREE.Mesh(new THREE.TubeGeometry(c, 14, 0.005, 4), stamenMat));
-      const anther = new THREE.Mesh(new THREE.SphereGeometry(0.012, 6, 4), mat.gray('#2b2321'));
-      anther.position.copy(c.getPoint(1)); anther.scale.set(1.8, 0.8, 0.8);
-      fl.add(anther);
+// Un higanbana (Lycoris radiata) con forma botánica:
+// umbela de 6 flores; cada flor con 6 tépalos estrechos, ondulados y enroscados hacia atrás,
+// 6 estambres muy largos que se arquean hacia arriba, un pistilo y anteras oscuras.
+function tepalGeometry(R, len = 0.42, W = 0.05) {
+  const NU = 26, NV = 9;
+  const pos = [], col = [], uv = [], idx = [];
+  const ph = R() * 6, curlEnd = -1.75 - R() * 0.35, start = 0.62 + R() * 0.15;
+  // línea central integrada: sale hacia afuera y arriba y se enrosca hacia atrás
+  const cen = [[0, 0]]; let x = 0, y = 0;
+  for (let i = 1; i <= NU; i++) { const u = i / NU, th = start + (curlEnd - start) * Math.pow(u, 1.5); x += Math.cos(th) * len / NU; y += Math.sin(th) * len / NU; cen.push([x, y]); }
+  for (let i = 0; i <= NU; i++) {
+    const u = i / NU;
+    const a = cen[Math.max(0, i - 1)], b = cen[Math.min(NU, i + 1)];
+    let tx = b[0] - a[0], ty = b[1] - a[1]; const tl = Math.hypot(tx, ty) || 1; tx /= tl; ty /= tl;
+    const nx = -ty, ny = tx; // normal en el plano (afuera, arriba)
+    const w = W * Math.pow(Math.sin(Math.PI * Math.min(1, u * 1.08 + 0.03)), 0.65) * (1 - 0.25 * u) + 0.002;
+    for (let j = 0; j <= NV; j++) {
+      const v = (j / NV) * 2 - 1;
+      const cup = 0.35 * w * v * v;                                   // bordes levantados
+      const wave = 0.22 * w * Math.sin(u * 30 + ph + v) * Math.pow(Math.abs(v), 3) * (0.3 + u); // margen rizado
+      const off = cup + wave;
+      pos.push(cen[i][0] + nx * off, cen[i][1] + ny * off, v * w);
+      const k = 0.45 + 0.75 * Math.pow(u, 0.7) + 0.12 * Math.abs(v);
+      col.push(Math.min(1.25, k), k * 0.82, k * 0.82);
+      uv.push(u, (v + 1) / 2);
+      if (i < NU && j < NV) { const q = i * (NV + 1) + j; idx.push(q, q + NV + 1, q + 1, q + 1, q + NV + 1, q + NV + 2); }
     }
   }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+  g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+  g.setIndex(idx); g.computeVertexNormals();
+  return g;
+}
+function taperTube(curve, r0, r1, segs = 24, radial = 6) {
+  const g = new THREE.TubeGeometry(curve, segs, 1, radial, false);
+  const p = g.attributes.position, n = g.attributes.normal;
+  for (let i = 0; i <= segs; i++) {
+    const t = i / segs, r = r0 + (r1 - r0) * t, c = curve.getPointAt(t);
+    for (let j = 0; j <= radial; j++) { const q = i * (radial + 1) + j; p.setXYZ(q, c.x + n.getX(q) * r, c.y + n.getY(q) * r, c.z + n.getZ(q) * r); }
+  }
+  p.needsUpdate = true; g.computeVertexNormals();
+  return g;
+}
+const LILY_MATS = {};
+function lilyMats() {
+  if (LILY_MATS.tepal) return LILY_MATS;
+  LILY_MATS.tepal = new THREE.MeshPhysicalMaterial({ color: '#d0141e', vertexColors: true, roughness: 0.42, sheen: 1, sheenRoughness: 0.4, sheenColor: new THREE.Color('#ff7070'), clearcoat: 0.25, clearcoatRoughness: 0.5, emissive: '#3a0205', side: THREE.DoubleSide });
+  LILY_MATS.stamen = new THREE.MeshPhysicalMaterial({ color: '#c4101a', roughness: 0.35, emissive: '#4a0306', clearcoat: 0.3 });
+  LILY_MATS.anther = new THREE.MeshStandardMaterial({ color: '#3a2a20', roughness: 0.8 });
+  LILY_MATS.stem = new THREE.MeshStandardMaterial({ color: '#3d4a36', roughness: 0.7 });
+  return LILY_MATS;
+}
+export function makeLily({ florets = 6, stem = 2.2, scale = 1, seed = 7, merged = false } = {}) {
+  const R = seeded(seed);
+  const M = lilyMats();
+  const root = new THREE.Group();
+  root.userData.petals = [];
+  const geo = { tepal: [], stamen: [], anther: [], stem: [] };
+  const add = (kind, g, m4) => { if (merged) { g.applyMatrix4(m4); geo[kind].push(g); return null; } const mesh = new THREE.Mesh(g, M[kind]); mesh.applyMatrix4(m4); root.add(mesh); return mesh; };
+  const I = new THREE.Matrix4();
+  // tallo (escapo) liso y sin hojas
+  const stemCurve = new THREE.CatmullRomCurve3([new THREE.Vector3(0, 0, 0), new THREE.Vector3(0.04, stem * 0.45, 0.02), new THREE.Vector3(-0.01, stem * 0.85, 0), new THREE.Vector3(0, stem, 0)]);
+  add('stem', taperTube(stemCurve, 0.03, 0.022, 30, 8), I);
+  const top = new THREE.Vector3(0, stem, 0);
+  for (let f = 0; f < florets; f++) {
+    const az = (f / florets) * Math.PI * 2 + R() * 0.25;
+    const tilt = 0.35 + R() * 0.35;                   // flores hacia afuera y algo arriba
+    const dir = new THREE.Vector3(Math.cos(az) * Math.cos(tilt), Math.sin(tilt), Math.sin(az) * Math.cos(tilt)).normalize();
+    // pedicelo
+    const pedEnd = top.clone().addScaledVector(dir, 0.16).add(new THREE.Vector3(0, 0.02, 0));
+    const pc = new THREE.CatmullRomCurve3([top.clone(), top.clone().addScaledVector(dir, 0.07).add(new THREE.Vector3(0, 0.04, 0)), pedEnd]);
+    add('stem', taperTube(pc, 0.011, 0.008, 8, 5), I);
+    // marco de la flor: eje Y local = dir
+    const q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
+    const base = new THREE.Matrix4().compose(pedEnd, q, new THREE.Vector3(1, 1, 1));
+    const ov = new THREE.SphereGeometry(0.018, 10, 8); ov.scale(1, 1.4, 1);
+    add('stem', ov, base);
+    // tépalos
+    for (let p = 0; p < 6; p++) {
+      const a = (p / 6) * Math.PI * 2 + R() * 0.1;
+      const tg = tepalGeometry(R, 0.36 + R() * 0.08, 0.042 + R() * 0.01);
+      // la geometría está en el plano (x = afuera, y = eje de la flor); rotarla alrededor del eje
+      const m = new THREE.Matrix4().makeRotationY(-a);
+      const mesh = add('tepal', tg, base.clone().multiply(m));
+      if (mesh) root.userData.petals.push(mesh);
+    }
+    // estambres y pistilo
+    for (let k = 0; k < 7; k++) {
+      const a = (k / 6) * Math.PI * 2 + 0.3 + R() * 0.2, isStyle = k === 6;
+      const r = new THREE.Vector3(Math.cos(a), 0, Math.sin(a)), L = isStyle ? 1.1 : 0.95 + R() * 0.12;
+      const pts = []; for (let i = 0; i <= 8; i++) { const u = i / 8; pts.push(new THREE.Vector3().addScaledVector(r, (0.04 * u + 0.36 * u * u) * L).add(new THREE.Vector3(0, (0.55 * u - 0.05 * u * u * u) * L, 0))); }
+      const sc = new THREE.CatmullRomCurve3(pts);
+      add('stamen', taperTube(sc, 0.005, 0.0028, 22, 5), base);
+      const tipM = new THREE.Matrix4().makeTranslation(sc.getPoint(1));
+      if (isStyle) add('stamen', new THREE.SphereGeometry(0.008, 6, 5), base.clone().multiply(tipM));
+      else { const an = new THREE.CapsuleGeometry(0.0055, 0.022, 2, 6); an.rotateZ(Math.PI / 2); an.rotateY(-a); add('anther', an, base.clone().multiply(tipM)); }
+    }
+  }
+  if (merged) {
+    for (const k in geo) if (geo[k].length) { const g = mergeGeometries(geo[k].map((x) => (x.index ? x : x)), false); root.add(new THREE.Mesh(g, M[k])); }
+  }
   root.scale.setScalar(scale);
-  root.userData.head = head;
   return root;
 }
 
@@ -175,13 +212,46 @@ function glowSprite(color = 'rgba(255,40,40,1)', size = 1) {
   const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
   sp.scale.setScalar(size); return sp;
 }
+// texturas pintadas con código: piel de sangre cristalizada con venas que brillan
+function veinTextures(w = 1024, h = 512, seed = 3, density = 1) {
+  const R = seeded(seed);
+  const col = document.createElement('canvas'); col.width = w; col.height = h; const c = col.getContext('2d');
+  const emi = document.createElement('canvas'); emi.width = w; emi.height = h; const e = emi.getContext('2d');
+  const g = c.createLinearGradient(0, 0, w, h); g.addColorStop(0, '#5a060c'); g.addColorStop(0.5, '#8e0d16'); g.addColorStop(1, '#3d0408');
+  c.fillStyle = g; c.fillRect(0, 0, w, h);
+  for (let i = 0; i < 900 * density; i++) { const x = R() * w, y = R() * h, r = 2 + R() * 22; const gg = c.createRadialGradient(x, y, 0, x, y, r); const dark = R() < 0.5; gg.addColorStop(0, dark ? 'rgba(20,0,2,0.35)' : 'rgba(190,40,45,0.25)'); gg.addColorStop(1, 'rgba(0,0,0,0)'); c.fillStyle = gg; c.fillRect(x - r, y - r, r * 2, r * 2); }
+  e.fillStyle = '#000'; e.fillRect(0, 0, w, h);
+  const vein = (x, y, a, len, wd, d) => {
+    c.beginPath(); e.beginPath(); c.moveTo(x, y); e.moveTo(x, y);
+    for (let i = 0; i < len; i++) { a += (R() - 0.5) * 0.6; x += Math.cos(a) * 6; y += Math.sin(a) * 6; c.lineTo(x, y); e.lineTo(x, y); if (d < 3 && R() < 0.05) vein(x, y, a + (R() < 0.5 ? -0.9 : 0.9), len * 0.5, wd * 0.6, d + 1); }
+    c.strokeStyle = 'rgba(25,0,3,0.7)'; c.lineWidth = wd * 2.2; c.stroke();
+    e.strokeStyle = `rgba(255,${60 + R() * 40},${50 + R() * 30},${0.9 - d * 0.2})`; e.lineWidth = wd; e.stroke();
+  };
+  for (let k = 0; k < 14 * density; k++) vein(R() * w, R() * h, R() * Math.PI * 2, 40 + R() * 80, 2.4 + R() * 2, 0);
+  const t1 = new THREE.CanvasTexture(col), t2 = new THREE.CanvasTexture(emi);
+  t1.colorSpace = THREE.SRGBColorSpace; t2.colorSpace = THREE.SRGBColorSpace;
+  for (const t of [t1, t2]) { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 4; }
+  return { map: t1, emissiveMap: t2 };
+}
+function clothTexture() {
+  const cv = document.createElement('canvas'); cv.width = 256; cv.height = 64; const c = cv.getContext('2d');
+  c.fillStyle = '#8a7a6a'; c.fillRect(0, 0, 256, 64);
+  for (let y = 0; y < 64; y += 4) { c.fillStyle = y % 8 ? 'rgba(60,48,40,0.35)' : 'rgba(200,190,175,0.18)'; c.fillRect(0, y, 256, 2); }
+  for (let i = 0; i < 40; i++) { c.fillStyle = `rgba(90,10,14,${Math.random() * 0.35})`; c.beginPath(); c.arc(Math.random() * 256, Math.random() * 64, 3 + Math.random() * 10, 0, 7); c.fill(); }
+  const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; return t;
+}
+
 export function makeWeapon() {
   const root = new THREE.Group();
   const parts = {};
   const metal = new THREE.MeshPhysicalMaterial({ color: '#2b1c1d', roughness: 0.32, metalness: 0.75, clearcoat: 0.6, clearcoatRoughness: 0.3, emissive: '#1a0203' });
-  const blood = new THREE.MeshPhysicalMaterial({ color: '#8f0d16', roughness: 0.22, metalness: 0.25, clearcoat: 1, clearcoatRoughness: 0.12, emissive: '#5a050a', emissiveIntensity: 0.7 });
+  const VT = veinTextures(1024, 512, 3, 1), VC = veinTextures(512, 256, 9, 0.6);
+  const blood = new THREE.MeshPhysicalMaterial({ color: '#ffffff', map: VC.map, emissive: '#ff3a3a', emissiveMap: VC.emissiveMap, emissiveIntensity: 1.6, roughness: 0.25, metalness: 0.2, clearcoat: 1, clearcoatRoughness: 0.1 });
+  const bladeMat = new THREE.MeshPhysicalMaterial({ color: '#ffffff', map: VT.map, emissive: '#ff3030', emissiveMap: VT.emissiveMap, emissiveIntensity: 1.9, roughness: 0.2, metalness: 0.3, clearcoat: 1, clearcoatRoughness: 0.08 });
+  for (const t of [VT.map, VT.emissiveMap]) { t.repeat.set(1 / 1.45, 1 / 0.7); t.offset.set(0.05 / 1.45, 0.26 / 0.7); }
   const bloodDark = new THREE.MeshPhysicalMaterial({ color: '#3a0508', roughness: 0.3, metalness: 0.4, clearcoat: 0.8, emissive: '#200203', emissiveIntensity: 0.6 });
-  const cloth = new THREE.MeshStandardMaterial({ color: '#8b7b6c', roughness: 0.95 });
+  const clothT = clothTexture(); clothT.repeat.set(40, 1);
+  const cloth = new THREE.MeshStandardMaterial({ color: '#ffffff', map: clothT, roughness: 0.95 });
   const glowM = (i = 1.6) => new THREE.MeshStandardMaterial({ color: '#ff3a3a', emissive: '#e0303a', emissiveIntensity: i, roughness: 0.4 });
 
   // 1. Núcleo Tóxico: esfera irregular con pinchos y corazón luminoso
@@ -245,7 +315,7 @@ export function makeWeapon() {
   sh.moveTo(0, -0.02); sh.bezierCurveTo(0.35, 0.36, 0.95, 0.34, 1.32, -0.08); sh.bezierCurveTo(1.0, 0.12, 0.5, 0.12, 0.04, -0.2); sh.lineTo(0, -0.02);
   const bg = new THREE.ExtrudeGeometry(sh, { depth: 0.022, bevelEnabled: true, bevelThickness: 0.016, bevelSize: 0.022, bevelSegments: 3, curveSegments: 48 });
   bg.translate(0, 0, -0.011);
-  hoja.add(new THREE.Mesh(bg, blood));
+  hoja.add(new THREE.Mesh(bg, bladeMat));
   const edgeCurve = new THREE.CubicBezierCurve3(new THREE.Vector3(0.04, -0.2, 0), new THREE.Vector3(0.5, 0.12, 0), new THREE.Vector3(1.0, 0.12, 0), new THREE.Vector3(1.32, -0.08, 0));
   hoja.add(new THREE.Mesh(new THREE.TubeGeometry(edgeCurve, 60, 0.007, 5), glowM(2.4)));
   const fuller = new THREE.CubicBezierCurve3(new THREE.Vector3(0.08, -0.04, 0.02), new THREE.Vector3(0.4, 0.2, 0.02), new THREE.Vector3(0.85, 0.2, 0.02), new THREE.Vector3(1.15, -0.02, 0.02));

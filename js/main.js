@@ -4,6 +4,8 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { CSS2DRenderer } from 'three/addons/renderers/CSS2DRenderer.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { InkShader } from './ink.js';
 import { CHAPTERS } from './story.js';
 import { Reader } from './reader.js';
@@ -48,12 +50,14 @@ const glCanvas = document.getElementById('gl');
 const renderer = new THREE.WebGLRenderer({ canvas: glCanvas, antialias: true, powerPreference: 'high-performance' });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 1.6));
 renderer.setSize(innerWidth, innerHeight);
+renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.1;
 const camera = new THREE.PerspectiveCamera(42, innerWidth / innerHeight, 0.05, 200);
 const composer = new EffectComposer(renderer);
 const renderPass = new RenderPass(new THREE.Scene(), camera);
 const ink = new ShaderPass(InkShader);
-ink.uniforms.edge.value = 0.7;
-composer.addPass(renderPass); composer.addPass(new OutputPass()); composer.addPass(ink);
+ink.uniforms.edge.value = 0.42; ink.uniforms.grain.value = 0.045;
+const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.7, 0.5, 0.82);
+composer.addPass(renderPass); composer.addPass(bloom); composer.addPass(new OutputPass()); composer.addPass(ink);
 const labels = new CSS2DRenderer({ element: document.getElementById('labels') });
 labels.setSize(innerWidth, innerHeight);
 
@@ -63,6 +67,8 @@ const app = { camera, mouse: new THREE.Vector2() };
 const lily = buildIntro(app);
 const forge = buildForge(app, { onPiece: (k) => music.sfx(k) });
 const scenes3d = { lily, forge };
+// reflejos de entorno para los materiales físicos (metal, laca, pétalos)
+{ const pmrem = new THREE.PMREMGenerator(renderer); const env = pmrem.fromScene(new RoomEnvironment(), 0.04).texture; lily.scene.environment = env; lily.scene.environmentIntensity = 0.35; forge.scene.environment = env; forge.scene.environmentIntensity = 0.9; }
 
 // ---------- 2D ----------
 const stage = new Stage(document.getElementById('stage'));
@@ -70,7 +76,7 @@ const fx = new FX(document.getElementById('fx'));
 defineValley(stage, { onBarrio: (b) => { showEma(b); music.sfx('open'); } });
 defineViews(stage, { onBestia: (id, cb) => { showBestia(id, cb); music.sfx('open'); } });
 
-const reader = new Reader(document.getElementById('reader'), { onEnd: (go) => (go === 'menu' ? toMenu() : openChapter(+go)) });
+const reader = new Reader(document.getElementById('reader'), { onEnd: (go) => (go === 'menu' ? toMenu() : openChapter(+go)), onStep: () => music.sfx('step') });
 
 let mode = 'intro', chapter = 0, hover = 0;
 const cam = { pos: new THREE.Vector3(...lily.frames.menu.pos), look: new THREE.Vector3(...lily.frames.menu.look), shift: 0 };
@@ -108,6 +114,7 @@ function selectPanel(i) { if (hover !== i) music.sfx('open'); hover = i; panels.
 function toMenu() {
   hideCard();
   mode = 'menu';
+  reader.enabled = false;
   body.className = 'state-menu';
   set3d(lily); lily.reset();
   document.getElementById('forge-list').classList.remove('on');
@@ -198,6 +205,7 @@ const camFrame = (sc, key) => { const f = sc.frames[key] || sc.frames.menu; retu
 
 // ---------- Bucle ----------
 const clock = new THREE.Clock();
+const labelsEl = document.getElementById('labels'), forgeListEl = document.getElementById('forge-list');
 const fade = document.getElementById('fade');
 function loop() {
   const dt = Math.min(clock.getDelta(), 0.05), time = clock.elapsedTime;
@@ -209,6 +217,7 @@ function loop() {
     w3 = 1;
     if (mode === 'menu') fxT = { petals: 0.15 };
   } else {
+    reader.update(dt);
     const S = reader.sections, i = reader.i, t = reader.t;
     if (arrive.i !== i || arrive.ch !== chapter) { arrive.i = i; arrive.ch = chapter; arrive.time = time; }
     const tp = clamp((time - arrive.time - 0.35) / 4.2); // animación que se reproduce sola al llegar al pasaje
@@ -245,8 +254,10 @@ function loop() {
   fade.style.opacity = Math.max(dim, fly ? 1 - smooth(clamp(fly.t)) : 0);
   music.tick();
 
-  // 3D solo cuando se ve
+  // 3D solo cuando se ve (y sus etiquetas solo con él)
   glCanvas.style.opacity = w3.toFixed(3);
+  labelsEl.style.visibility = w3 > 0.5 ? 'visible' : 'hidden';
+  forgeListEl.classList.toggle('on', mode === 'reader' && active3d === forge && w3 > 0.5 && reader.sections[reader.active]?.key === 'forja');
   if (w3 > 0.003) {
     if (active3d.tick) active3d.tick(dt, time, mode);
     const shift = mode === 'reader' && innerWidth > 760 ? Math.min(innerWidth * 0.17, 260) : 0;

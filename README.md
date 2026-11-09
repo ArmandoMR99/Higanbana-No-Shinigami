@@ -10,8 +10,9 @@ Sitio estático para GitHub Pages: HTML, CSS y JavaScript con [Three.js](https:/
 - **3D solo en lo importante:** el lirio (portada y cierre, cuando se rearma) y la Kusarigama (forja y mini juego).
 - **2D en todo lo demás**, al estilo de la infografía Kusarigama Radiata: papel carbón, pincel claro, carmesí, marcos finos y etiquetas con líneas guía. Escenas en capas con paralaje.
 - El valle es un mapa pintado con incienso, fuego, criaturas y emas; las gráficas son trazos de pincel (línea de humo, latido, ensō de bestias, columnas de humo, 312 farolillos, emakimono del viaje, marca contra memoria).
-- **Música compuesta con código** (Web Audio), a volumen de fondo: koto (cuerda pulsada Karplus-Strong), shakuhachi, cuerdas, bajo y taiko en escala miyako-bushi (Re). El arreglo cambia con cada pasaje (calma, tormenta, forja, pelea, nieve, redención). Botón de silencio arriba a la derecha.
-- Las animaciones de los pasajes cortos se reproducen solas al llegar; las de los pasajes largos (el valle, el viaje) avanzan con el scroll. El scroll se acomoda suavemente en cada pasaje.
+- **Banda sonora compuesta con código** (Web Audio), inspirada en el lenguaje de las bandas sonoras de anime de época: shamisen, shakuhachi, koto, taiko (o-daiko y shime) e hyoshigi sobre cuerdas, metales graves y coro, en escala miyako-bushi. Cambia de arreglo y tempo con cada pasaje. Botón de silencio arriba a la derecha.
+- **Navegación por pasos**: rueda, gesto táctil o flechas avanzan un pasaje con una transición suave (sin el scroll nativo). Las animaciones de los pasajes cortos se reproducen solas al llegar; las de los largos (el valle, el viaje) avanzan paso a paso.
+- **3D**: lirio botánico (tépalos ondulados, estambres, pistilo) con un campo de lirios en la niebla; Kusarigama con texturas de venas que brillan, reflejos de entorno y resplandor (bloom).
 
 ## Estructura
 

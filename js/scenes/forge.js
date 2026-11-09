@@ -7,10 +7,10 @@ export function buildForge(app, { onPiece } = {}) {
   const scene = new THREE.Scene();
   scene.background = new THREE.Color('#0b0909');
   scene.fog = new THREE.FogExp2('#0b0909', 0.07);
-  scene.add(new THREE.HemisphereLight('#b8b2aa', '#0a0808', 0.55));
-  const key = new THREE.DirectionalLight('#ffffff', 1.6); key.position.set(-3, 5, 4); scene.add(key);
-  const rimL = new THREE.PointLight('#ff2a2a', 14, 9, 1.6); rimL.position.set(2.4, 2.2, -1.6); scene.add(rimL);
-  const rimR = new THREE.PointLight('#ff3a3a', 8, 8, 1.6); rimR.position.set(-2.6, 2.2, -1.6); scene.add(rimR);
+  scene.add(new THREE.HemisphereLight('#c8c2ba', '#0a0808', 0.9));
+  const key = new THREE.DirectionalLight('#ffffff', 3.2); key.position.set(-3, 5, 4); scene.add(key);
+  const rimL = new THREE.PointLight('#ff2a2a', 26, 10, 1.4); rimL.position.set(2.4, 2.2, -1.6); scene.add(rimL);
+  const rimR = new THREE.PointLight('#ff3a3a', 14, 9, 1.4); rimR.position.set(-2.6, 2.2, -1.6); scene.add(rimR);
   const core = new THREE.PointLight('#ff2020', 0, 5, 1.6); core.position.set(0, 1.2, 1.2); scene.add(core);
 
   // suelo: charco oscuro que refleja
@@ -20,7 +20,9 @@ export function buildForge(app, { onPiece } = {}) {
   pool.rotation.x = -Math.PI / 2; pool.position.set(0.3, -0.59, -0.4); pool.visible = false;
 
   const weapon = makeWeapon();
-  weapon.position.set(0.1, 1.35, 0); weapon.rotation.set(0, -0.25, -0.35); weapon.scale.setScalar(0.9);
+  weapon.position.set(0.1, 1.35, 0); weapon.rotation.set(0, -0.25, -0.35); weapon.scale.setScalar(1.12);
+  // telón de fondo: resplandor rojo difuso que da profundidad
+  { const c = document.createElement('canvas'); c.width = c.height = 512; const g = c.getContext('2d'); const gr = g.createRadialGradient(256, 256, 0, 256, 256, 256); gr.addColorStop(0, 'rgba(120,14,20,0.9)'); gr.addColorStop(0.45, 'rgba(50,6,8,0.6)'); gr.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = gr; g.fillRect(0, 0, 512, 512); const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace; const back = new THREE.Mesh(new THREE.PlaneGeometry(16, 16), new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false })); back.position.set(0.6, 1.3, -5); scene.add(back); }
   scene.add(weapon);
   weapon.traverse((o) => { if (o.isMesh) o.material = o.material.clone(); });
   const parts = weapon.userData.parts;
@@ -73,7 +75,6 @@ export function buildForge(app, { onPiece } = {}) {
     },
     update({ key, t }) {
       if (key !== current) { if (current === 'forja' && key !== 'forja' && key !== 'despertar2') setPlaced(6); current = key; }
-      forgeList.classList.toggle('on', key === 'forja');
       for (const id of order) parts[id].userData.num.visible = key === 'forja' && order[placed] === id;
       // en 'despertar2' solo hay sangre flotando: las piezas aún no existen
       weapon.visible = key !== 'despertar2' || t > 0.6;
@@ -94,10 +95,10 @@ export function buildForge(app, { onPiece } = {}) {
       }
       const done = placed >= 6 || current !== 'forja';
       const breathe = 0.5 + 0.5 * Math.sin(time * 1.8);
-      core.intensity = done ? 6 + breathe * 6 : 1 + placed;
-      rimL.intensity = 10 + breathe * 6;
+      core.intensity = done ? 10 + breathe * 8 : 2 + placed * 1.5;
+      rimL.intensity = 20 + breathe * 10;
       weapon.rotation.y = done && current !== 'forja' ? -0.25 + Math.sin(time * 0.45) * 0.5 : -0.25;
-      weapon.position.y = 1.35 + Math.sin(time * 1.2) * 0.04;
+      weapon.position.y = 1.3 + Math.sin(time * 1.2) * 0.04;
       if (err > 0) { err -= dt; weapon.position.x = 0.1 + Math.sin(err * 60) * 0.025; }
     },
   };

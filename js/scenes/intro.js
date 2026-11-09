@@ -11,7 +11,7 @@ export function buildIntro(app) {
   const rim = new THREE.PointLight('#ff3030', 6, 6, 2); rim.position.set(0.6, 2.4, -1.2); scene.add(rim);
   const under = new THREE.PointLight('#ff2020', 2, 3, 2); under.position.set(0, 0.6, 0.8); scene.add(under);
 
-  const ground = new THREE.Mesh(new THREE.CircleGeometry(14, 48), new THREE.MeshStandardMaterial({ color: '#2a2725', roughness: 1 }));
+  const ground = new THREE.Mesh(new THREE.CircleGeometry(14, 48), new THREE.MeshStandardMaterial({ color: '#1c1a19', roughness: 1 }));
   ground.rotation.x = -Math.PI / 2; scene.add(ground);
   const grassM = new THREE.MeshStandardMaterial({ color: '#4a4643', roughness: 1, side: THREE.DoubleSide });
   for (let i = 0; i < 260; i++) {
@@ -26,6 +26,18 @@ export function buildIntro(app) {
 
   const lily = makeLily({ florets: 6, stem: 1.7, scale: 1, seed: 3 });
   scene.add(lily);
+  // campo de lirios en la penumbra
+  const field = new THREE.Group(); scene.add(field);
+  for (let i = 0; i < 22; i++) {
+    const a = Math.PI * (0.15 + Math.random() * 0.7) + Math.PI, r = 2.2 + Math.random() * 7.5;
+    const l = makeLily({ florets: 5 + (i % 2), stem: 1.1 + Math.random() * 0.8, scale: 0.55 + Math.random() * 0.4, seed: 20 + i, merged: true });
+    l.position.set(Math.cos(a) * r * 1.3, 0, Math.sin(a) * r * 0.9 - 0.6); l.rotation.y = Math.random() * 6; l.rotation.z = (Math.random() - 0.5) * 0.12;
+    field.add(l);
+  }
+  // niebla baja que se desplaza
+  const fogTex = (() => { const c = document.createElement('canvas'); c.width = c.height = 256; const g = c.getContext('2d'); const gr = g.createRadialGradient(128, 128, 0, 128, 128, 128); gr.addColorStop(0, 'rgba(150,140,135,0.5)'); gr.addColorStop(1, 'rgba(150,140,135,0)'); g.fillStyle = gr; g.fillRect(0, 0, 256, 256); return new THREE.CanvasTexture(c); })();
+  const fogs = [];
+  for (let i = 0; i < 14; i++) { const m = new THREE.Mesh(new THREE.PlaneGeometry(6, 2.2), new THREE.MeshBasicMaterial({ map: fogTex, transparent: true, opacity: 0.12, depthWrite: false })); m.position.set((Math.random() - 0.5) * 16, 0.25 + Math.random() * 0.5, -1 - Math.random() * 7); m.userData.v = 0.05 + Math.random() * 0.12; scene.add(m); fogs.push(m); }
   const homes = lily.userData.petals.map((p) => ({ p, pos: p.position.clone(), rot: p.rotation.clone(), off: new THREE.Vector3((Math.random() - 0.5) * 6, Math.random() * 4 + 1, (Math.random() - 0.2) * 5), spin: new THREE.Vector3(Math.random() * 8, Math.random() * 8, Math.random() * 8) }));
 
   const petals = makeParticles({ count: 140, kind: 'petal', color: '#c8161e', size: 0.045, area: [9, 6, 7], center: [0, 3, -1] });
@@ -62,6 +74,8 @@ export function buildIntro(app) {
       rim.intensity = 5 + Math.sin(time * 1.3) * 1.5 + (reform >= 0 ? reform * 6 : 0);
       halo.material.opacity = 0.7 + 0.3 * Math.sin(time * 1.3) + (reform >= 0 ? reform * 0.6 : 0);
       petals.update(dt, time);
+      for (const f of fogs) { f.position.x += f.userData.v * dt; if (f.position.x > 9) f.position.x = -9; f.lookAt(app.camera.position.x, f.position.y, app.camera.position.z); }
+      field.children.forEach((l, i) => { l.rotation.z = Math.sin(time * 0.6 + i) * 0.04; });
       if (burst) {
         burst += dt;
         for (const f of flying) { f.m.position.addScaledVector(f.v, dt * 0.6); f.m.rotation.x += f.r.x * dt * 0.3; f.m.rotation.y += f.r.y * dt * 0.3; f.v.y -= dt * 0.8; }

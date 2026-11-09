@@ -383,8 +383,8 @@ export function weapon2d(ctx, x, y, s = 1, { alpha = 1 } = {}) {
 function drawCreature(g, type, col, hi) {
   if (type === 'dragon') {
     // serpiente de hueso: cuerpo ondulado que se afina, cresta de púas, cabeza con cuernos
-    const pts = []; for (let i = 0; i <= 40; i++) { const t = i / 40; pts.push([12 + t * 96, 32 + Math.sin(t * Math.PI * 2.2) * 10 * (0.4 + t * 0.6)]); }
-    const W = (t) => 7.5 * (1 - t) ** 0.8 + 1;
+    const pts = []; for (let i = 0; i <= 40; i++) { const t = i / 40; pts.push([24 + t * 86, 32 + Math.sin(t * Math.PI * 2.1 + 0.3) * 12 * (0.35 + t * 0.65)]); }
+    const W = (t) => 10 * (1 - t) ** 0.75 + 1.4;
     const L = [], R = [];
     pts.forEach((p, i) => { const a = pts[Math.max(0, i - 1)], b = pts[Math.min(40, i + 1)]; let nx = -(b[1] - a[1]), ny = b[0] - a[0]; const l = Math.hypot(nx, ny); nx /= l; ny /= l; const w = W(i / 40); L.push([p[0] + nx * w, p[1] + ny * w, nx, ny]); R.push([p[0] - nx * w, p[1] - ny * w]); });
     g.fillStyle = hi ? '#c8141e' : '#d9d2c6';
@@ -397,11 +397,18 @@ function drawCreature(g, type, col, hi) {
     for (let i = 4; i < 36; i += 3) { const p = L[i]; g.beginPath(); g.moveTo(p[0] - 2, p[1]); g.lineTo(p[0] + p[2] * 6, p[1] + p[3] * 6); g.lineTo(p[0] + 2, p[1]); g.fill(); }
     // garras
     for (const i of [8, 22]) { const p = R[i]; g.strokeStyle = g.fillStyle; g.lineWidth = 1.6; g.beginPath(); g.moveTo(p[0], p[1]); g.lineTo(p[0] - 3, p[1] + 7); g.lineTo(p[0] + 1, p[1] + 9); g.stroke(); }
+    // patas con tres garras
+    for (const i of [7, 25]) for (const side of [L, R]) { const p = side[i], q = pts[i]; const dx = p[0] - q[0], dy = p[1] - q[1], l = Math.hypot(dx, dy) || 1; const ex = p[0] + dx / l * 8, ey = p[1] + dy / l * 8; g.strokeStyle = hi ? '#7a0c12' : '#2a2321'; g.lineWidth = 2.2; g.beginPath(); g.moveTo(p[0], p[1]); g.lineTo(ex, ey); g.stroke(); g.lineWidth = 1; for (const a of [-0.6, 0, 0.6]) { const ang = Math.atan2(dy, dx) + a; g.beginPath(); g.moveTo(ex, ey); g.lineTo(ex + Math.cos(ang) * 3.5, ey + Math.sin(ang) * 3.5); g.stroke(); } }
+    // crin sobre el cuello
+    g.strokeStyle = hi ? '#ff5a5a' : 'rgba(225,218,206,0.9)'; g.lineWidth = 0.9;
+    for (let i = 1; i < 12; i++) { const p = L[i]; g.beginPath(); g.moveTo(p[0], p[1]); g.quadraticCurveTo(p[0] + 4, p[1] - 6, p[0] + 9, p[1] - 4 - (i % 3)); g.stroke(); }
     // cabeza
     const h = pts[0];
     g.fillStyle = hi ? '#c8141e' : '#e6dfd3'; g.beginPath(); g.moveTo(h[0] + 4, h[1] - 7); g.quadraticCurveTo(h[0] - 10, h[1] - 6, h[0] - 12, h[1]); g.quadraticCurveTo(h[0] - 8, h[1] + 7, h[0] + 4, h[1] + 7); g.closePath(); g.fill(); g.strokeStyle = 'rgba(10,8,8,0.9)'; g.lineWidth = 1; g.stroke();
     g.strokeStyle = '#2a2321'; g.lineWidth = 1.6; g.beginPath(); g.moveTo(h[0] + 2, h[1] - 6); g.quadraticCurveTo(h[0] + 8, h[1] - 14, h[0] + 14, h[1] - 13); g.moveTo(h[0], h[1] - 6); g.quadraticCurveTo(h[0] + 3, h[1] - 16, h[0] + 9, h[1] - 18); g.stroke();
     g.fillStyle = '#e0303a'; g.beginPath(); g.arc(h[0] - 4, h[1] - 2, 1.4, 0, 7); g.fill();
+    // bigotes largos
+    g.strokeStyle = 'rgba(225,218,206,0.85)'; g.lineWidth = 0.8; g.beginPath(); g.moveTo(h[0] - 11, h[1] + 1); g.bezierCurveTo(h[0] - 18, h[1] + 8, h[0] - 6, h[1] + 16, h[0] - 14, h[1] + 22); g.moveTo(h[0] - 11, h[1] - 1); g.bezierCurveTo(h[0] - 20, h[1] - 6, h[0] - 10, h[1] - 14, h[0] - 18, h[1] - 18); g.stroke();
   } else if (type === 'oni') {
     g.save(); g.translate(30, 2); g.scale(0.26, 0.26); g.fillStyle = hi ? '#c8141e' : '#cfc8bd'; g.fill(path('oni')); g.strokeStyle = 'rgba(10,8,8,0.9)'; g.lineWidth = 4; g.stroke(path('oni')); g.restore();
     g.fillStyle = '#5a4a40'; g.save(); g.translate(44, 30); g.rotate(-0.5); g.fillRect(-2, -18, 4, 22); g.restore();
@@ -450,3 +457,14 @@ export function axisLabel(ctx, text, x, y, align = 'center') {
 export const weaponSprite = () => cached('weapon2d', 240, 500, (g) => weapon2d(g, 40, 200, 1), 2);
 export function weaponAt(ctx, x, y, s = 1, ang = 0, alpha = 1) { ctx.save(); ctx.globalAlpha *= alpha; stamp(ctx, weaponSprite(), x, y, s, ang, 40 / 240, 200 / 500); ctx.restore(); }
 export const lilySprite = (sc = 0.4) => cached('lily-' + sc, 240 * sc, 200 * sc, (g) => lily(g, 120 * sc, 110 * sc, sc, { stem: 0, seed: 6 }), 3);
+
+// retrato grande de una criatura para su ficha (aguada de fondo + dibujo detallado)
+export function creaturePortrait(type) {
+  const [w, h] = CBOX[type];
+  const key = 'portrait-' + type;
+  return cached(key, w + 20, h + 20, (g) => {
+    const gr = g.createRadialGradient((w + 20) / 2, (h + 20) / 2, 0, (w + 20) / 2, (h + 20) / 2, (w + 20) * 0.6);
+    gr.addColorStop(0, 'rgba(154,31,40,0.35)'); gr.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = gr; g.fillRect(0, 0, w + 20, h + 20);
+    g.translate(10, 10); drawCreature(g, type, null, false);
+  }, 5);
+}

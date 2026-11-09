@@ -1,5 +1,8 @@
 // Tarjetas: la ema de cada barrio y la ficha de cada bestia (Modo Bestias).
 import { BARRIOS, CRIATURAS, hhmm } from './story.js';
+import { creaturePortrait } from './two/brush.js';
+const portraits = {};
+const portrait = (id) => (portraits[id] ||= creaturePortrait(id).toDataURL());
 
 const card = document.getElementById('card');
 const body = card.querySelector('.card-body');
@@ -37,6 +40,7 @@ export function showBestia(id, onChange) {
   card.className = 'bestia';
   body.innerHTML = `
     <div class="m">Modo Bestias</div>
+    <img class="portrait" src="${portrait(c.id)}" alt="${c.name}">
     <div class="k" lang="ja">${c.kanji}</div>
     <div class="n">${c.name}</div>
     <p>${c.how}</p>
