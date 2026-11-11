@@ -252,10 +252,6 @@ body.ch-2 #btn-bestias { display: block; }
 /* agujero del cordón de la ema */
 #card:not(.bestia)::before { content: ''; position: absolute; left: 50%; top: 1.5rem; width: 10px; height: 10px; margin-left: -5px; border-radius: 50%; background: #3a2a24; box-shadow: inset 0 1px 2px rgba(0,0,0,.6); }
 @keyframes cardin { from { opacity: 0; transform: translateY(-46%); } }
-.card-close { position: absolute; z-index: 2; top: 3.2rem; right: .9rem; width: 34px; height: 34px; display: grid; place-items: center; padding: 0; font-size: 1.35rem; line-height: 1; color: inherit; opacity: .7; border: 1px solid currentColor; border-radius: 50%; transition: opacity .25s, background .25s; }
-.card-close:hover { opacity: 1; background: rgba(0,0,0,.08); }
-#card.bestia .card-close { top: .8rem; right: .8rem; border-color: rgba(195,191,185,.35); }
-#card.bestia .card-close:hover { border-color: var(--glow); background: rgba(224,48,58,.12); }
 .card-body { overflow-wrap: break-word; }
 .card-body .m { padding-right: 2.6rem; }
 .card-body .k { font-family: var(--f-title); font-size: 2.2rem; font-weight: 800; letter-spacing: .1em; margin-top: .6rem; }
@@ -295,7 +291,8 @@ body.ch-2 #btn-bestias { display: block; }
 }
 
 .card-body .portrait { display: block; width: 100%; max-height: 190px; object-fit: contain; margin: .6rem 0 -.4rem; filter: drop-shadow(0 6px 18px rgba(0,0,0,.6)); }
-#card { max-height: calc(100vh - 150px); overflow-y: auto; overscroll-behavior: contain; }
+#card { max-height: calc(100vh - 150px); display: flex; flex-direction: column; }
+#card .card-body { overflow-y: auto; overscroll-behavior: contain; min-height: 0; margin-right: -.6rem; padding-right: .6rem; scrollbar-width: thin; scrollbar-color: rgba(120,40,40,.6) transparent; }
 
 /* ---------- Pantalla de carga ---------- */
 #loader { position: fixed; inset: 0; z-index: 200; display: grid; place-items: center; align-content: center; gap: 1.2rem; background: var(--ink); transition: opacity 1.2s var(--ease), visibility 0s 1.2s; }
@@ -311,11 +308,10 @@ body.state-loading #intro .title-jp, body.state-loading #intro .title-es, body.s
 /* ---------- Sobre el proyecto ---------- */
 #about { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; background: rgba(6,4,4,.82); backdrop-filter: blur(6px); animation: fadein .6s var(--ease); }
 @keyframes fadein { from { opacity: 0; } }
-.about-inner { position: relative; width: min(760px, 92vw); max-height: 88vh; overflow-y: auto; padding: 3rem 3rem 2.4rem; border: 1px solid rgba(154,31,40,.55); background: linear-gradient(180deg, #171211, #0e0b0b); box-shadow: 0 40px 120px rgba(0,0,0,.7); }
+.about-inner { position: relative; width: min(760px, 92vw); max-height: 88vh; display: flex; flex-direction: column; border: 1px solid rgba(154,31,40,.55); background: linear-gradient(180deg, #171211, #0e0b0b); box-shadow: 0 40px 120px rgba(0,0,0,.7); }
 .about-inner::before, .about-inner::after { content: ''; position: absolute; width: 28px; height: 28px; border: 2px solid var(--glow); }
 .about-inner::before { left: -1px; top: -1px; border-right: 0; border-bottom: 0; }
 .about-inner::after { right: -1px; bottom: -1px; border-left: 0; border-top: 0; }
-.about-close { position: absolute; right: 1.2rem; top: 1rem; font-size: 1.6rem; color: var(--bone); opacity: .7; }
 .about-jp { font-family: var(--f-title); font-weight: 800; font-size: 2.2rem; letter-spacing: .14em; color: #efe9e1; }
 #about h2 { margin: .3rem 0 1.2rem; font-family: var(--f-data); font-weight: 500; font-size: .8rem; letter-spacing: .4em; text-transform: uppercase; color: var(--glow); }
 .about-lead { font-size: 1.05rem; line-height: 1.8; color: #d6d0c7; margin: 0 0 1.8rem; }
@@ -364,7 +360,7 @@ body.state-loading #intro .title-jp, body.state-loading #intro .title-es, body.s
 /* ---------- Códice del valle ---------- */
 #codex { position: fixed; inset: 0; z-index: 62; display: grid; place-items: center; background: rgba(6,4,4,.86); backdrop-filter: blur(6px); animation: fadein .6s var(--ease); }
 #codex[hidden] { display: none; }
-.cx-inner { position: relative; width: min(1060px, 94vw); height: 90vh; overflow-y: auto; padding: 2.6rem 3rem 2.6rem; border: 1px solid rgba(154,31,40,.55); background: linear-gradient(180deg, #171211, #0e0b0b); box-shadow: 0 40px 120px rgba(0,0,0,.7); color: var(--bone); scrollbar-width: thin; scrollbar-color: #5a2a2c transparent; }
+.cx-inner { position: relative; width: min(1060px, 94vw); height: 90vh; display: flex; flex-direction: column; border: 1px solid rgba(154,31,40,.55); background: linear-gradient(180deg, #171211, #0e0b0b); box-shadow: 0 40px 120px rgba(0,0,0,.7); color: var(--bone); scrollbar-width: thin; scrollbar-color: #5a2a2c transparent; }
 .cx-inner::before { content: ''; position: absolute; left: -1px; top: -1px; width: 28px; height: 28px; border: 2px solid var(--glow); border-right: 0; border-bottom: 0; }
 #codex h2 { margin: .3rem 0 1rem; font-family: var(--f-data); font-weight: 500; font-size: .8rem; letter-spacing: .4em; text-transform: uppercase; color: var(--glow); }
 .cx-tabs { position: sticky; top: -2.6rem; z-index: 2; display: flex; gap: .4rem; flex-wrap: wrap; margin: 0 -3rem 1.4rem; padding: .8rem 3rem; background: linear-gradient(180deg, #161110 80%, rgba(22,17,16,0)); border-bottom: 1px solid rgba(195,191,185,.1); }
@@ -436,7 +432,7 @@ body.state-loading #intro .title-jp, body.state-loading #intro .title-es, body.s
 .cx-foot { margin-top: 2rem; padding-top: 1rem; border-top: 1px solid rgba(195,191,185,.12); font-family: var(--f-data); font-size: .72rem; color: var(--ash); }
 .link-codex { margin-top: .4rem; font-family: var(--f-data); font-size: .74rem; letter-spacing: .08em; color: #ff8a8a; border-bottom: 1px solid rgba(224,48,58,.4); }
 @media (max-width: 860px) {
-  .cx-inner { padding: 2rem 1.3rem; height: 92vh; }
+  .cx-inner { height: 92vh; }
   .cx-tabs { margin: 0 -1.3rem 1.2rem; padding: .7rem 1.3rem; top: -2rem; }
   .cx-acts { grid-template-columns: 1fr; }
   .cx-link { width: auto; height: 46px; }
@@ -451,3 +447,21 @@ body.state-loading #intro .title-jp, body.state-loading #intro .title-es, body.s
   .cx-dec { grid-template-columns: 1fr; }
 }
 .cx-shot { display: block; border: 0; } .cx-shot:hover img { border-color: var(--glow); }
+
+/* ---------- Botón de cerrar (todas las ventanas) ----------
+   El área que se puede tocar (56 px) es mucho más grande que la X que se ve (30 px),
+   y queda fija en la esquina aunque el contenido se desplace. */
+.x-close { position: absolute; z-index: 8; top: .45rem; right: .45rem; width: 56px; height: 56px; padding: 0; margin: 0; border: 0; background: transparent; display: grid; place-items: center; color: var(--bone); }
+.x-close::after { content: ''; position: absolute; inset: -6px; } /* aún más margen alrededor */
+.x-close i { position: relative; display: block; width: 30px; height: 30px; border: 1px solid rgba(195,191,185,.45); border-radius: 50%; transition: border-color .25s, background .25s, transform .25s; pointer-events: none; }
+.x-close i::before, .x-close i::after { content: ''; position: absolute; left: 50%; top: 50%; width: 14px; height: 1.6px; background: currentColor; border-radius: 1px; transform: translate(-50%, -50%) rotate(45deg); }
+.x-close i::after { transform: translate(-50%, -50%) rotate(-45deg); }
+.x-close:hover i, .x-close:focus-visible i { border-color: var(--glow); background: rgba(224,48,58,.18); transform: rotate(90deg); color: #fff; }
+.x-close:focus-visible { outline: none; }
+#card:not(.bestia) .x-close { top: 2.7rem; right: .5rem; color: #2a201d; }
+#card:not(.bestia) .x-close i { border-color: rgba(42,32,29,.55); }
+#card:not(.bestia) .x-close:hover i { color: #2a201d; background: rgba(124,28,37,.18); border-color: #7c1c25; }
+.about-scroll { overflow-y: auto; min-height: 0; padding: 3rem 3rem 2.4rem; scrollbar-width: thin; scrollbar-color: #5a2a2c transparent; }
+.cx-scroll { position: relative; overflow-y: auto; min-height: 0; height: 100%; padding: 2.6rem 3rem 2.6rem; scrollbar-width: thin; scrollbar-color: #5a2a2c transparent; }
+.cx-tabs { padding-right: 4.6rem !important; }
+@media (max-width: 860px) { .about-scroll { padding: 2.4rem 1.4rem 2rem; } .cx-scroll { padding: 2rem 1.3rem; } }

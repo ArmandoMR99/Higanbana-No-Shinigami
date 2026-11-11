@@ -7,7 +7,7 @@ const portrait = (id) => (portraits[id] ||= creaturePortrait(id).toDataURL());
 
 const card = document.getElementById('card');
 const body = card.querySelector('.card-body');
-card.querySelector('.card-close').addEventListener('click', () => hideCard());
+card.querySelector('.x-close').addEventListener('click', (e) => { e.stopPropagation(); hideCard(); });
 let onBestia = null;
 
 export function hideCard() { card.hidden = true; if (onBestia) onBestia(null); }

@@ -17,7 +17,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500&family=Shippori+Mincho+B1:wght@500;700;800&family=Zen+Old+Mincho:wght@400;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/style.css?v=20261111c">
   <script type="importmap">
     {
       "imports": {
@@ -71,14 +71,15 @@
 
   <!-- Tarjetas: ema de barrio y ficha de bestia -->
   <div id="card" role="dialog" aria-modal="false" hidden>
-    <button class="card-close" aria-label="Cerrar">×</button>
+    <button class="x-close" aria-label="Cerrar" title="Cerrar"><i></i></button>
     <div class="card-body"></div>
   </div>
 
   <!-- SOBRE EL PROYECTO -->
   <div id="about" role="dialog" aria-modal="true" aria-label="Sobre el proyecto" hidden>
     <div class="about-inner">
-      <button class="about-close" aria-label="Cerrar">×</button>
+      <button class="x-close" aria-label="Cerrar" title="Cerrar"><i></i></button>
+      <div class="about-scroll">
       <div class="about-jp" lang="ja">彼岸花の死神</div>
       <h2>Higanbana no Shinigami</h2>
       <p class="about-lead">Hola, soy Armando. Esto empezó como una historia corta para una clase y se me fue de las manos: terminó convertido en una web con tres capítulos, dibujos en tinta, gráficas, mapas, un arma en 3D y música japonesa. Es la historia de Kenji, un muchacho del valle de Yomigawa que toca la flor equivocada.</p>
@@ -91,6 +92,7 @@
         <div><h3>La música</h3><p>La compuse en escala miyako-bushi y suena con muestras de koto, shamisen, shakuhachi, cuerdas, coro y taiko del banco FluidR3 de Frank Wen (licencia CC BY 3.0). Te recomiendo verla con sonido.</p></div>
       </div>
       <p class="about-foot">Todos los personajes, criaturas, escenarios, gráficas y mapas están dibujados con código, sin imágenes prediseñadas. La silueta de Japón sale de Natural Earth (dominio público).</p>
+      </div>
     </div>
   </div>
 
@@ -105,6 +107,6 @@
   </svg>
 
   <noscript><p class="noscript">Esta historia necesita JavaScript y WebGL.</p></noscript>
-  <script type="module" src="js/main.js"></script>
+  <script type="module" src="js/main.js?v=20261111c"></script>
 </body>
 </html>

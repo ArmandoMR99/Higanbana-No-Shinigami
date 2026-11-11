@@ -9,7 +9,7 @@ import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { InkShader } from './ink.js';
 import { CHAPTERS } from './story.js';
 import { Reader } from './reader.js';
-import { hideCard, cardOpen, showBestia, showEma } from './ui.js';
+import { hideCard, cardOpen, showBestia, showEma } from './ui.js?v=20261111c';
 import { clamp, smooth, lerp } from './geo.js';
 import { buildIntro } from './scenes/intro.js';
 import { buildForge } from './scenes/forge.js';
@@ -19,7 +19,7 @@ import { defineValley } from './two/valley2d.js';
 import { defineViews, defineSchema, paintPanel } from './two/views.js';
 import { canvas } from './two/brush.js';
 import { Music } from './audio.js';
-import { buildCodex } from './codex.js';
+import { buildCodex } from './codex.js?v=20261111c';
 
 // ---------- Qué acompaña a cada pasaje ----------
 // v: escena 2D · s: escena 3D (lily | forge) · fx: partículas · mood: música
@@ -199,7 +199,7 @@ soundBtn.addEventListener('click', (e) => { e.stopPropagation(); const on = musi
 const about = document.getElementById('about');
 const openAbout = () => { about.hidden = false; music.sfx('open'); };
 const closeAbout = () => { about.hidden = true; };
-about.addEventListener('click', (e) => { if (e.target === about || e.target.closest('.about-close')) closeAbout(); });
+about.addEventListener('click', (e) => { if (e.target === about || e.target.closest('.x-close')) closeAbout(); });
 menu.addEventListener('click', (e) => { if (e.target.closest('#btn-about')) { e.stopPropagation(); openAbout(); } if (e.target.closest('#btn-codex')) { e.stopPropagation(); openCodex(); } }, true);
 // códice: guía de la infografía (esquema narrativo, íconos, índice de visualizaciones, proceso)
 const codexEl = document.getElementById('codex');

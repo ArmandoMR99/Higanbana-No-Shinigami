@@ -129,16 +129,18 @@ const TABS = [['estructura', 'Estructura', structureHTML], ['iconos', 'Íconos',
 export function buildCodex(el, { onGo, onClose, sfx }) {
   el.innerHTML = `
     <div class="cx-inner">
-      <button class="about-close" aria-label="Cerrar">×</button>
+      <button class="x-close" aria-label="Cerrar" title="Cerrar"><i></i></button>
+      <div class="cx-scroll">
       <div class="about-jp" lang="ja">黄泉川の書</div>
       <h2>Códice del valle</h2>
       <nav class="cx-tabs" role="tablist">${TABS.map(([id, name], i) => `<button role="tab" data-tab="${id}" class="${i ? '' : 'on'}">${name}</button>`).join('')}</nav>
       ${TABS.map(([id, , fn], i) => `<section class="cx-pane${i ? '' : ' on'}" data-pane="${id}">${fn()}</section>`).join('')}
+      </div>
     </div>`;
-  const inner = el.querySelector('.cx-inner');
+  const inner = el.querySelector('.cx-scroll');
   const show = (id) => { el.querySelectorAll('.cx-tabs button').forEach((b) => b.classList.toggle('on', b.dataset.tab === id)); el.querySelectorAll('.cx-pane').forEach((p) => p.classList.toggle('on', p.dataset.pane === id)); inner.scrollTop = 0; sfx && sfx(); };
   el.addEventListener('click', (e) => {
-    if (e.target === el || e.target.closest('.about-close')) return onClose();
+    if (e.target === el || e.target.closest('.x-close')) return onClose();
     const t = e.target.closest('[data-tab]'); if (t) return show(t.dataset.tab);
     const g = e.target.closest('[data-ch]'); if (g) onGo(+g.dataset.ch, g.dataset.key, +g.dataset.step);
   });
