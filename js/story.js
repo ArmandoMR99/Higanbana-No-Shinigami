@@ -22,7 +22,7 @@ export const CHAPTERS = [
       ] },
       { key: 'bosque2', cine: 'Hasta que le tocó comprobarlo.' },
       { key: 'flor', paras: [
-        'Tenía trece años. Aquella tarde había entrado al bosque a juntar leña y terminó persiguiendo algo que creyó ver moverse entre los bambúes. Cuando se dio cuenta, el pueblo había quedado muy atrás. Buscando el camino de regreso encontró una flor solitaria, roja como una herida abierta. Se agachó para verla mejor y, sin pensarlo, rozó uno de sus pétalos.',
+        'Tenía trece años y era el equinoccio de otoño, la semana en que los lirios rojos cubren los caminos. Aquella tarde había entrado al bosque a juntar leña y terminó persiguiendo algo que creyó ver moverse entre los bambúes. Cuando se dio cuenta, el pueblo había quedado muy atrás. Buscando el camino de regreso encontró una flor solitaria, roja como una herida abierta. Se agachó para verla mejor y, sin pensarlo, rozó uno de sus pétalos.',
         'Al principio no pasó nada. Después sintió un pinchazo helado en la garganta, como si le hubieran clavado una aguja. Cayó al suelo con las manos en el cuello, ahogándose con su propia saliva, convencido de que se estaba muriendo. Cuando por fin pudo levantarse, la flor ya no estaba.',
       ] },
       { key: 'rio', paras: [
@@ -35,10 +35,11 @@ export const CHAPTERS = [
         'No aceptó más hospitalidad. Se marchó por el camino del norte y nadie volvió a verlo.',
       ] },
       { key: 'ronin2', cine: 'El cobro llegó tres noches después.' },
-      { key: 'valle', len: 3, hint: 'Sigue bajando para consumir el incienso · toca un barrio para leer su ema', paras: [
-        'A las diez de la noche el cielo se tiñó de un morado enfermizo y la lluvia cayó con tanta fuerza que no se veía nada a dos pasos. Primero se escuchó un rugido sobre las nubes. Luego, gritos.',
-        'De las montañas del norte bajaron dragones con escamas de hueso, y detrás de ellos un ejército de onis que entró por los senderos incendiando las casas con antorchas de fuego azul. Por el río subieron kappas, y entre el humo se movían yokais que nadie supo nombrar.',
-        'Akabana, el barrio más cercano a la montaña, fue el primero en arder. Kenji intentó correr hacia el camino, pero sus padres lo arrastraron hasta el almacén de arroz, lo empujaron adentro y atrancaron la puerta por fuera.',
+      { key: 'valle', len: 3, hint: 'Avanza para consumir el incienso · toca un barrio para leer su ema', paras: [
+        'A las diez de la noche el cielo se tiñó de un morado enfermizo y la lluvia cayó con tanta fuerza que no se veía nada a dos pasos. En el altar de la casa, la varilla de incienso que su madre encendía cada noche apenas empezaba a consumirse. Primero se escuchó un rugido sobre las nubes. Luego, gritos.',
+        'Esa noche vivían en el valle de Yomigawa 312 personas, repartidas en cinco barrios: Akabana, Takegawa, Hikarizaka, Tsukimori y Kurokawa. En menos de una hora llegaron treinta criaturas. De las montañas del norte bajaron doce dragones con escamas de hueso, y detrás de ellos siete onis que entraron por los senderos incendiando las casas con antorchas de fuego azul.',
+        'Por el río subieron cuatro kappas hacia Takegawa, y entre el humo se movían siete yokais que nadie supo nombrar. A las diez y cinco ardió Akabana, el barrio más cercano a la montaña; a las diez y cuarto, los muelles de Takegawa.',
+        'Kenji intentó correr hacia el camino, pero sus padres lo arrastraron hasta el almacén de arroz, lo empujaron adentro y atrancaron la puerta por fuera.',
       ] },
       { key: 'almacen', paras: [
         '—No salgas. Pase lo que pase —le dijo su madre.',
@@ -76,9 +77,11 @@ export const CHAPTERS = [
         'Después, el arma siguió tirando de él. Hacia la calle. Hacia el fuego. Hacia todo lo que se movía.',
         'Lo que pasó después lo recordaría solo a pedazos: la lluvia, el rugido de un dragón partiéndose en dos, el peso de la cadena girando sobre su cabeza. La fuerza que lo arrastraba era demasiado violenta para un cuerpo de quince años. La vista se le llenó de manchas rojas y cayó desmayado en el barro.',
       ] },
-      { key: 'amanecer', len: 2, hint: 'Sigue bajando: el incienso termina de consumirse', paras: [
+      { key: 'amanecer', len: 2, hint: 'Avanza: el incienso termina de consumirse', paras: [
+        'A las once de la noche, el incienso del altar terminó de consumirse. Para entonces el fuego había alcanzado Hikarizaka, Tsukimori y, por último, Kurokawa, el barrio más lejano: no quedaba un rincón del valle sin tocar.',
         'Despertó cuando el sol intentaba colarse entre el humo. Ya no llovía. Solo quedaba un silencio pesado, de esos que duelen en los oídos.',
-        'A su alrededor estaban los cuerpos de los vecinos, pero también los restos de decenas de criaturas y los cadáveres cercenados de dos dragones colosales. Todo cortado con una precisión que ningún humano habría podido lograr. Junto a su mano, la kusarigama yacía clavada en el barro, limpia, como si hubiera bebido hasta la última gota de sangre.',
+        'A su alrededor estaban los cuerpos de los vecinos, pero también los restos de catorce criaturas y los cadáveres cercenados de dos dragones colosales. Todo cortado con una precisión que ningún humano habría podido lograr. Las otras dieciséis bestias habían huido hacia las montañas antes del amanecer.',
+        'Junto a su mano, la kusarigama yacía clavada en el barro, limpia, como si hubiera bebido hasta la última gota de sangre.',
       ] },
       { key: 'ruinas', paras: [
         'Buscó su casa. Solo encontró madera quemada. Sus padres estaban donde los había visto caer.',
@@ -105,10 +108,10 @@ export const CHAPTERS = [
     icon: 'snow',
     passages: [
       { key: 'recuento', len: 2, hint: 'El humo de cada barrio y sus farolillos: lo que quedó del valle', paras: [
-        'Desde el camino de montaña, Kenji miró el valle por última vez.',
+        'Desde el camino de montaña, Kenji miró el valle por última vez. De sus 312 habitantes, 184 habían muerto, 68 estaban heridos y solo 60 habían salido ilesos. Akabana, su barrio, había perdido ocho de cada diez casas; Kurokawa, apenas dos de cada diez.',
         'Los primeros meses fueron un infierno. Kenji no sabía pelear, pero la kusarigama lo arrastraba cada vez que olía a una criatura que rompía el orden de los dioses. Cruzó pueblos destruidos y bosques olvidados, y se topó con seres que solo conocía por los cuentos de su madre.',
       ] },
-      { key: 'viaje', len: 3, hint: 'Sigue bajando para recorrer el viaje', paras: [
+      { key: 'viaje', len: 3, hint: 'Avanza para recorrer el viaje', paras: [
         'En un templo abandonado conoció a una kitsune con la apariencia de una niña pequeña. Fue la primera que no lo atacó. Miró la marca de su cuello con lástima y le dijo que esa flor olía a azufre y a castigo divino.',
         'En la cumbre de una montaña nevada se enfrentó a un tengu orgulloso. Antes de que la guadaña lo decapitara, le escupió en la cara: —Los dioses jamás premian a sus perros.',
         'A la orilla de un río seco, un kappa intentó arrastrarlo al fondo. No quería comérselo: quería salvarlo del arma, ahogándolo antes de que fuera demasiado tarde.',

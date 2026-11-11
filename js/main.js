@@ -83,6 +83,14 @@ const cam = { pos: new THREE.Vector3(...lily.frames.menu.pos), look: new THREE.V
 let active3d = lily;
 let fly = null;
 const arrive = { i: -1, ch: 0, time: 0 };
+// efectos sincronizados con las animaciones (capítulo, pasaje, momento 0..1)
+const CUES = [
+  { ch: 1, key: 'flor', at: 0.4, sfx: 'mark' }, { ch: 1, key: 'ronin', at: 0.48, sfx: 'bowl' },
+  { ch: 1, key: 'almacen', at: 0.42, sfx: 'hit' }, { ch: 2, key: 'despertar', at: 0.05, sfx: 'heart' },
+  { ch: 2, key: 'despertar', at: 0.75, sfx: 'mark' }, { ch: 3, key: 'eleccion2', at: 0.1, sfx: 'mark' },
+];
+const firedCues = new Set();
+let lastAmb = { rain: -1, fire: -1, wind: -1 };
 
 function set3d(sc) {
   if (active3d === sc) return;
@@ -263,7 +271,7 @@ function loop() {
   } else {
     reader.update(dt);
     const S = reader.sections, i = reader.i, t = reader.t;
-    if (arrive.i !== i || arrive.ch !== chapter) { arrive.i = i; arrive.ch = chapter; arrive.time = time; }
+    if (arrive.i !== i || arrive.ch !== chapter) { arrive.i = i; arrive.ch = chapter; arrive.time = time; firedCues.clear(); }
     const tp = clamp((time - arrive.time - 0.35) / 4.2); // animación que se reproduce sola al llegar al pasaje
     const A = S[i], B = S[i + 1] || A, L = A.len || 1;
     const k = L > 1 ? clamp(t * L - (L - 1)) : t;
@@ -290,11 +298,16 @@ function loop() {
     for (const kk of ['rain', 'snow', 'petals', 'leaves', 'embers', 'ash']) fxT[kk] = (sa.fx?.[kk] || 0) * wa + (sb.fx?.[kk] || 0) * wb;
     dim = lerp(A.cine ? 1 : 0, B.cine ? 1 : 0, e) * 0.62;
     music.setMood(e < 0.5 ? sa.mood : sb.mood);
+    // sonidos atados a lo que pasa en la escena
+    const cueKey = S[reader.active]?.key;
+    for (const c of CUES) if (c.key === cueKey && c.ch === chapter && tp >= c.at && !firedCues.has(c)) { firedCues.add(c); music.sfx(c.sfx); }
     stage.frame(weights, { key: A.key, t, time, dt, ch: chapter, views }, scales);
     if (fly) { fly.t += dt / 1.2; if (fly.t >= 1) fly = null; }
   }
   if (mode !== 'reader') stage.frame({}, { time, dt });
   fx.frame(fxT, dt, time);
+  { const amb = { rain: fxT.rain || 0, fire: Math.min(1, (fxT.embers || 0) * 1.4), wind: Math.max(fxT.leaves || 0, fxT.snow || 0, fxT.ash || 0) };
+    if (Math.abs(amb.rain - lastAmb.rain) + Math.abs(amb.fire - lastAmb.fire) + Math.abs(amb.wind - lastAmb.wind) > 0.08) { music.setAmbience(amb); lastAmb = amb; } }
   fade.style.opacity = Math.max(dim, fly ? 1 - smooth(clamp(fly.t)) : 0);
   music.tick();
   drawTrail(dt);
@@ -337,6 +350,7 @@ loop();
 const t0 = performance.now();
 Promise.race([document.fonts.ready, new Promise((r) => setTimeout(r, 3500))]).then(() => {
   setLoad(0.6);
+  music.preload();
   try { renderer.compile(lily.scene, camera); renderer.compile(forge.scene, camera); } catch (e) {}
   setLoad(0.9);
   setTimeout(() => { setLoad(1); setTimeout(() => { if (body.classList.contains('state-loading')) body.className = 'state-intro'; }, 500); }, Math.max(0, 900 - (performance.now() - t0)));
