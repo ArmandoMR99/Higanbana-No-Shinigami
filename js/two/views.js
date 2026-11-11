@@ -2,6 +2,7 @@
 // Cada escena: capas pintadas una vez (con paralaje suave) + una capa dinámica ligera (sprites ya dibujados).
 import { C, rng, paper, mountains, brush, line, wash, bamboo, lily, figure, figurePoint, house, callout, frame, creature, creatureSprite, spline, canvas, cached, stamp, chartCard, axisLabel, weaponAt, lilySprite } from './brush.js';
 import { CRIATURAS, VIAJE, MARCA } from '../story.js';
+import { drawIcon } from '../icons.js';
 
 const art = (ctx, L, fn) => { ctx.save(); ctx.translate(L.ox, L.oy); ctx.scale(L.s, L.s); fn(ctx); ctx.restore(); };
 const ramp = (x, a, b) => Math.max(0, Math.min(1, (x - a) / (b - a)));
@@ -38,13 +39,37 @@ export function defineViews(stage, { onBestia }) {
         brush(c, [h, [h[0] + 60, h[1] - 20], [h[0] + 150, h[1] - 50]], { w: 1.2, color: C.boneA(0.4), profile: 'even', dry: 0.5, seed: 4, n: 14 }); }) },
       { depth: 0.45, paint: (ctx, L) => art(ctx, L, (c) => lily(c, 580, 470, 2.1, { stem: 110 })) },
     ],
-    update(v, st) { const t = st.key === 'flor' ? st.tp : 0; v.layers[3].c.style.opacity = (1 - ramp(t, 0.72, 0.95)).toFixed(3); },
+    // línea de tiempo lenta: primero la ficha botánica (imagen explicativa), luego el roce y la flor que desaparece
+    // paso 1: la ficha botánica se arma etiqueta por etiqueta · paso 2: el roce, el pinchazo y la flor que desaparece
+    update(v, st) { const u = st.key === 'flor' && st.si === 1 ? st.ts : 0; v.layers[3].c.style.opacity = (1 - ramp(u, 0.72, 0.98)).toFixed(3); },
     dyn(ctx, L, st) {
-      const t = st.key === 'flor' ? st.tp : 0; if (t < 0.36) return;
+      const fl = st.key === 'flor', si = fl ? st.si : 0, e = fl ? st.ts : 0;
+      const t = si === 0 ? e * 0.44 : 0.5 + e * 0.5; // misma escala de antes: 0–0,44 ficha · 0,5–1 roce
       art(ctx, L, (c) => {
-        for (let k = 0; k < 4; k++) { const f = (st.time * 0.5 + k / 4) % 1; const r = 20 + f * 280 * ramp(t, 0.36, 0.6); c.strokeStyle = C.glowA(0.5 * (1 - f)); c.lineWidth = 2; c.beginPath(); c.ellipse(580, 490, r, r * 0.45, 0, 0, 7); c.stroke(); }
-        const g = c.createRadialGradient(580, 470, 0, 580, 470, 170); g.addColorStop(0, C.glowA(0.35 * ramp(t, 0.4, 0.6) * (1 - ramp(t, 0.85, 1)))); g.addColorStop(1, C.glowA(0)); c.fillStyle = g; c.fillRect(400, 290, 360, 360);
-        if (t > 0.5) callout(c, [520, 452], [380, 330], 'Un pinchazo helado en la garganta', { align: 'right', size: 12 });
+        const an = si === 0 ? ramp(e, 0, 0.12) : 1 - ramp(e, 0, 0.12);
+        if (an > 0) {
+          c.save(); c.globalAlpha = an;
+          const vg = c.createRadialGradient(580, 430, 150, 580, 430, 560); vg.addColorStop(0, 'rgba(8,6,6,0)'); vg.addColorStop(0.25, 'rgba(8,6,6,0.6)'); vg.addColorStop(1, 'rgba(8,6,6,0.8)'); c.fillStyle = vg; c.fillRect(-200, -100, 1400, 920);
+          c.fillStyle = '#efe9e1'; c.font = '700 22px "Shippori Mincho B1", serif'; c.textAlign = 'left'; c.fillText('彼岸花  Higanbana', 700, 86);
+          c.fillStyle = C.boneA(0.75); c.font = 'italic 14px "Zen Old Mincho", serif'; c.fillText('Lycoris radiata · lirio de araña', 700, 110);
+          c.font = '500 9.5px "IBM Plex Sans", sans-serif'; c.fillText('FICHA BOTÁNICA', 700, 62); drawIcon(c, 'higanbana', 680, 92, 24);
+          const parts = [
+            [[560, 452], [770, 404], 'Tépalos', 'seis por flor, enroscados hacia atrás'],
+            [[668, 352], [790, 300], 'Estambres', 'largos y curvos, como patas de araña'],
+            [[582, 478], [380, 420], 'Umbela', 'cinco a siete flores en un mismo tallo', 'right'],
+            [[584, 610], [720, 600], 'Tallo sin hojas', '30 a 70 cm · las hojas salen tras la flor'],
+            [[436, 380], [300, 300], 'Florece en el equinoccio', 'de otoño, junto a los caminos y tumbas', 'right'],
+          ];
+          parts.forEach(([a, b, tt, sub, al], i) => { const k = si === 0 ? ramp(e, 0.08 + i * 0.13, 0.2 + i * 0.13) : 1; if (k <= 0) return; c.globalAlpha = an * k; callout(c, a, b, tt, { size: 17, sub, align: al || 'left', color: '#f1ebe2' }); });
+          // escala: la flor mide un palmo
+          c.globalAlpha = an * (si === 0 ? ramp(e, 0.75, 0.9) : 1); c.strokeStyle = C.boneA(0.55); c.lineWidth = 1; c.beginPath(); c.moveTo(880, 330); c.lineTo(880, 700); c.moveTo(874, 330); c.lineTo(886, 330); c.moveTo(874, 700); c.lineTo(886, 700); c.stroke();
+          c.fillStyle = C.boneA(0.8); c.font = '13px "IBM Plex Sans", sans-serif'; c.textAlign = 'left'; c.fillText('≈ 50 cm', 890, 520);
+          c.restore();
+        }
+        if (t < 0.5) return;
+        for (let k = 0; k < 4; k++) { const f = (st.time * 0.5 + k / 4) % 1; const r = 20 + f * 280 * ramp(t, 0.5, 0.66); c.strokeStyle = C.glowA(0.5 * (1 - f)); c.lineWidth = 2; c.beginPath(); c.ellipse(580, 490, r, r * 0.45, 0, 0, 7); c.stroke(); }
+        const g = c.createRadialGradient(580, 470, 0, 580, 470, 170); g.addColorStop(0, C.glowA(0.35 * ramp(t, 0.52, 0.66) * (1 - ramp(t, 0.9, 1)))); g.addColorStop(1, C.glowA(0)); c.fillStyle = g; c.fillRect(400, 290, 360, 360);
+        if (t > 0.58) callout(c, [520, 452], [380, 330], 'Un pinchazo helado en la garganta', { align: 'right', size: 16, color: '#f1ebe2' });
       });
     },
   });
@@ -71,7 +96,21 @@ export function defineViews(stage, { onBestia }) {
         const g = c.createRadialGradient(mx, my, 0, mx, my, 46); g.addColorStop(0, C.glowA(0.85 * a)); g.addColorStop(0.3, C.red(0.5 * a)); g.addColorStop(1, C.red(0)); c.fillStyle = g; c.beginPath(); c.arc(mx, my, 46, 0, 7); c.fill();
         if (a > 0.15) stamp(c, lilySprite(0.4), mx, my - 6, 1, Math.PI, 0.5, 0.55);
         for (let q = 0; q < 4; q++) { const f = (st.time * 0.3 + q / 4) % 1; c.strokeStyle = C.boneA(0.28 * (1 - f)); c.lineWidth = 1; c.beginPath(); c.ellipse(RV.x, 320, 30 + f * 240, (30 + f * 240) * 0.22, 0, 0, 7); c.stroke(); }
-        if (a > 0.6) callout(c, [mx + 14, my], [780, 440], 'La marca del higanbana', { size: 13, sub: 'roja, en el lado derecho del cuello' });
+        // lupa: la marca ampliada (imagen explicativa)
+        const z = ramp(t, 0.45, 0.7);
+        if (z > 0) {
+          const nk = figurePoint(RV.x, RV.y, RV.h, { dir: -1, pose: 'kneel' }, 'mark'), lx = 830, ly = 470, lr = 88 * (0.6 + 0.4 * z);
+          c.save(); c.globalAlpha = z;
+          c.strokeStyle = C.boneA(0.45); c.lineWidth = 1; c.setLineDash([3, 4]); c.beginPath(); c.moveTo(nk[0], nk[1] - 5); c.lineTo(lx - lr * 0.5, ly - lr * 0.87); c.moveTo(nk[0], nk[1] + 5); c.lineTo(lx - lr * 0.95, ly + lr * 0.3); c.stroke(); c.setLineDash([]);
+          c.strokeStyle = C.glowA(0.9); c.lineWidth = 1.4; c.beginPath(); c.arc(nk[0], nk[1], 9, 0, 7); c.stroke();
+          const lg = c.createRadialGradient(lx, ly, 0, lx, ly, lr); lg.addColorStop(0, '#2a1514'); lg.addColorStop(1, '#0b0808'); c.fillStyle = lg; c.beginPath(); c.arc(lx, ly, lr, 0, 7); c.fill();
+          const gg = c.createRadialGradient(lx, ly, 0, lx, ly, lr * 0.9); gg.addColorStop(0, C.glowA(0.35 + 0.15 * Math.sin(st.time * 2.4))); gg.addColorStop(1, C.glowA(0)); c.fillStyle = gg; c.beginPath(); c.arc(lx, ly, lr, 0, 7); c.fill();
+          stamp(c, lilySprite(0.4), lx, ly - 4, 1.6 * (0.6 + 0.4 * z));
+          c.strokeStyle = C.boneA(0.7); c.lineWidth = 2; c.beginPath(); c.arc(lx, ly, lr, 0, 7); c.stroke(); c.strokeStyle = C.boneA(0.2); c.lineWidth = 1; c.beginPath(); c.arc(lx, ly, lr + 6, 0, 7); c.stroke();
+          c.fillStyle = C.boneA(0.6); c.font = '500 9.5px "IBM Plex Sans", sans-serif'; c.textAlign = 'center'; c.fillText('AMPLIACIÓN × 6', lx, ly + lr + 22);
+          c.restore();
+          if (z > 0.8) { callout(c, [lx + lr * 0.6, ly - lr * 0.75], [900, 330], 'La marca del higanbana', { size: 13, sub: 'roja, fresca y detallada', align: 'right' }); callout(c, [nk[0] - 6, nk[1]], [380, 160], 'Lado derecho del cuello', { size: 12, sub: 'arde como un hierro al rojo', align: 'right' }); }
+        }
       });
     },
   });
@@ -170,7 +209,7 @@ export function defineViews(stage, { onBestia }) {
     layers: [
       bg([560, 380, 660, 'rgba(76,52,52,0.5)']),
       { depth: 0.2, paint: (ctx, L) => art(ctx, L, (c) => {
-        chartCard(c, 110, 90, 860, 420, 'El poder de Kenji', 'Intensidad de 0 a 100 · de 22:30 a 23:00');
+        chartCard(c, 110, 90, 860, 420, 'El poder de Kenji', 'Gráfico de líneas · intensidad de 0 a 100 · 22:30 a 23:00');
         line(c, [[PX(30), PY(0)], [PX(60), PY(0)]], { alpha: 0.35 }); line(c, [[PX(30), PY(100)], [PX(60), PY(100)]], { alpha: 0.14, dash: [2, 5] }); line(c, [[PX(30), PY(50)], [PX(60), PY(50)]], { alpha: 0.08, dash: [2, 5] });
         for (const [m, tx] of [[30, '22:30'], [37.5, '22:37'], [45, '22:45'], [52.5, '22:52'], [60, '23:00']]) axisLabel(c, tx, PX(m), PY(0) + 20);
         axisLabel(c, '100', PX(30) - 10, PY(100) + 3, 'right'); axisLabel(c, '50', PX(30) - 10, PY(50) + 3, 'right'); axisLabel(c, '0', PX(30) - 10, PY(0) + 3, 'right');
@@ -208,6 +247,8 @@ export function defineViews(stage, { onBestia }) {
         weaponAt(c, ...figurePoint(EC[0], EC[1] + 120, 190, {}, 'hand'), 0.36, -0.4);
         arcs.forEach((A) => { for (let k = 0; k < A.c.count; k++) { const a = A.a0 + (A.a1 - A.a0) * ((k + 0.5) / A.c.count); creature(c, A.c.id, EC[0] + Math.cos(a) * (ER + 52), EC[1] + Math.sin(a) * (ER + 52), A.c.id === 'dragon' ? 1.05 : 1.55); } });
         c.fillStyle = '#f1ebe2'; c.font = '700 22px "Shippori Mincho B1", serif'; c.textAlign = 'center'; c.fillText('30 criaturas', EC[0], EC[1] - 112); axisLabel(c, 'ATACARON EL VALLE · TOCA UN NOMBRE', EC[0], EC[1] - 92);
+        c.textAlign = 'left'; c.fillStyle = '#efe9e1'; c.font = '600 17px "Shippori Mincho B1", serif'; c.fillText('Las bestias de la noche', 30, 44);
+        c.fillStyle = C.boneA(0.55); c.font = '500 9.5px "IBM Plex Sans", sans-serif'; c.fillText('GRÁFICO DE DONA (ENSŌ) · PROPORCIÓN POR TIPO', 30, 62);
       }) },
     ],
     mount(el, L) {
@@ -296,9 +337,10 @@ export function defineViews(stage, { onBestia }) {
     },
     dyn(ctx, L, st) {
       if (!roll) return;
-      const t = st.key === 'viaje' ? Math.min(1, st.t * 1.3) : 1;
-      const s = L.s, viewW = L.aw + 80, x0 = L.ax - 40;
-      const off = Math.max(0, Math.min(RW * s - viewW, t * (RW * s - viewW)));
+      const s = L.s, viewW = L.aw + 80, x0 = L.ax - 40, maxOff = RW * s - viewW;
+      // cada paso del pasaje centra una parada del viaje; el rollo se desenrolla de una a la siguiente
+      const offFor = (i) => (i < 0 ? 0 : Math.max(0, Math.min(maxOff, stops[i].x * s - viewW * 0.5)));
+      const off = st.key === 'viaje' ? offFor(st.si - 1) + (offFor(st.si) - offFor(st.si - 1)) * (st.ts ?? 1) : maxOff;
       const k = roll.width / roll.w;
       ctx.drawImage(roll, off * k, 0, viewW * k, roll.height, x0, L.oy, viewW, roll.h);
       for (const rx of [x0 - 8, x0 + viewW - 8]) { const g = ctx.createLinearGradient(rx, 0, rx + 16, 0); g.addColorStop(0, '#2a1f1c'); g.addColorStop(0.5, '#6a5146'); g.addColorStop(1, '#2a1f1c'); ctx.fillStyle = g; ctx.fillRect(rx, L.oy + 40 * s, 16, 640 * s); }
@@ -308,11 +350,16 @@ export function defineViews(stage, { onBestia }) {
       for (let i = 0; i < n; i += 3) { const p = roadPts[i]; ctx.fillStyle = C.glowA(0.85); ctx.beginPath(); ctx.ellipse(p[0] + (i % 6 ? 4 : -4), p[1], 3, 2, 0, 0, 7); ctx.fill(); }
       const p = roadPts[n - 1]; figure(ctx, p[0], p[1] - 2, 86, { pose: 'walk', mark: true, rim: C.boneA(0.6) });
       ctx.restore();
+      // título del mapa de ruta y parada actual
+      const stop = st.key === 'viaje' ? st.si : VIAJE.length - 1;
+      ctx.save(); ctx.textAlign = 'left'; ctx.fillStyle = '#efe9e1'; ctx.font = `600 ${Math.max(12, 17 * s)}px "Shippori Mincho B1", serif`; ctx.fillText('Mapa de ruta · siete inviernos de viaje', x0 + 14, L.oy + 30 * s);
+      ctx.fillStyle = C.boneA(0.6); ctx.font = `500 ${Math.max(9, 10.5 * s)}px "IBM Plex Sans", sans-serif`; ctx.fillText(`PARADA ${stop + 1} DE ${VIAJE.length} · ${VIAJE[stop].name.toUpperCase()} · ${VIAJE[stop].who.toUpperCase()}`, x0 + 14, L.oy + 50 * s);
+      ctx.restore();
     },
   });
 
   // invierno: la marca crece y los recuerdos se borran (Tabla C)
-  const AGE = { pesadilla: [13, 16.5], pregunta: [16.5, 18.5], leyenda: [18.5, 20.5], invierno: [20.5, 22], invierno2: [22, 22], eleccion: [22, 22.6], eleccion2: [22.6, 22.6] };
+  const AGE = { pesadilla: [13, 16.5], leyenda: [16.5, 20.5], invierno: [20.5, 22], invierno2: [22, 22], eleccion: [22, 22.6], eleccion2: [22.6, 22.6] };
   const CX = (age) => 530 + ((age - 13) / 9.6) * 400, CY = (v) => 330 - v * 2.2;
   const interp = (age, col) => { for (let i = 1; i < MARCA.length; i++) { const a = MARCA[i - 1], b = MARCA[i]; if (age <= b.age) return a[col] + (b[col] - a[col]) * ((age - a.age) / (b.age - a.age)); } return MARCA[MARCA.length - 1][col]; };
   const curve = (col, upTo) => { const pts = []; for (let a = 13; a <= upTo + 0.001; a += 0.05) pts.push([CX(a), CY(interp(a, col))]); return pts; };
@@ -322,7 +369,7 @@ export function defineViews(stage, { onBestia }) {
       { depth: 0.1, paint: (ctx, L) => art(ctx, L, (c) => { mountains(c, { x0: -300, x1: 1300, base: 440, amp: 110, color: 'rgba(230,226,220,0.12)', fade: 60, seed: 131, rim: 0.4 }); }) },
       { depth: 0.25, paint: (ctx, L) => { ctx.fillStyle = 'rgba(205,200,193,0.12)'; ctx.fillRect(-80, L.Y(510), L.w + 160, L.h); art(ctx, L, (c) => { const R = rng(132); for (let i = 0; i < 30; i++) { const x = -200 + R() * 1400, y = 480 + R() * 60, h = 50 + R() * 70; c.fillStyle = 'rgba(8,6,6,0.88)'; c.beginPath(); c.moveTo(x, y - h); c.lineTo(x - h * 0.28, y); c.lineTo(x + h * 0.28, y); c.closePath(); c.fill(); c.fillStyle = 'rgba(230,226,220,0.55)'; c.beginPath(); c.moveTo(x, y - h); c.lineTo(x - h * 0.1, y - h * 0.65); c.lineTo(x + h * 0.1, y - h * 0.65); c.fill(); }
         for (let i = 0; i < 5; i++) house(c, 810 + i * 48, 530 + (i % 2) * 10, 44, { color: C.boneA(0.45) }); }); } },
-      { depth: 0.5, paint: (ctx, L) => art(ctx, L, (c) => { chartCard(c, 470, 60, 510, 330, 'La marca contra los recuerdos', 'Porcentaje · edad de Kenji'); for (const a of [13, 15, 18, 20, 22]) axisLabel(c, `${a} años`, CX(a), CY(0) + 20); line(c, [[CX(13), CY(0)], [CX(22.6), CY(0)]], { alpha: 0.35 }); line(c, [[CX(13), CY(100)], [CX(22.6), CY(100)]], { alpha: 0.12, dash: [2, 5] }); axisLabel(c, '100', CX(13) - 10, CY(100) + 3, 'right'); axisLabel(c, '0', CX(13) - 10, CY(0) + 3, 'right'); }) },
+      { depth: 0.5, paint: (ctx, L) => art(ctx, L, (c) => { chartCard(c, 470, 60, 510, 330, 'La marca contra los recuerdos', 'Gráfico de líneas · % según la edad de Kenji'); for (const a of [13, 15, 18, 20, 22]) axisLabel(c, `${a} años`, CX(a), CY(0) + 20); line(c, [[CX(13), CY(0)], [CX(22.6), CY(0)]], { alpha: 0.35 }); line(c, [[CX(13), CY(100)], [CX(22.6), CY(100)]], { alpha: 0.12, dash: [2, 5] }); axisLabel(c, '100', CX(13) - 10, CY(100) + 3, 'right'); axisLabel(c, '0', CX(13) - 10, CY(0) + 3, 'right'); }) },
     ],
     dyn(ctx, L, st) {
       const r = AGE[st.key] || [22.6, 22.6]; const age = r[0] + (r[1] - r[0]) * (st.tp ?? 0);
@@ -345,6 +392,85 @@ export function defineViews(stage, { onBestia }) {
         c.fillStyle = '#efe9e1'; c.fillText(`Recuerdos ${Math.round(interp(age, 'memoria'))} %`, pr[0] + dx, pr[1] + 16);
         const cur = MARCA.filter((x) => x.age <= age + 0.01).pop();
         c.fillStyle = '#f1ebe2'; c.font = '600 15px "Shippori Mincho B1", serif'; c.textAlign = 'right'; c.fillText(`${Math.floor(age)} años · ${cur ? cur.label : ''}`, 960, 88);
+      });
+    },
+  });
+}
+
+// ================= Esquema de relaciones (Cap. III, «pregunta») =================
+// Contenedores (personajes y artefactos) y conectores con verbo: quién crea, encierra, arrastra o advierte a quién.
+export const SCHEMA = {
+  nodes: [
+    { id: 'dioses', x: 500, y: 92, icon: 'dioses', name: 'Los dioses', role: 'quieren a las bestias muertas' },
+    { id: 'marca', x: 500, y: 236, icon: 'marca', name: 'La marca', role: 'una prisión, no un honor', hot: true },
+    { id: 'espiritu', x: 180, y: 236, icon: 'espiritu', name: 'Espíritu rebelde', role: 'desafió el trono divino' },
+    { id: 'kusarigama', x: 820, y: 236, icon: 'kusarigama', name: 'Kusarigama', role: 'su voz: ¿el espíritu?' },
+    { id: 'kenji', x: 500, y: 420, icon: 'kenji', name: 'Kenji', role: '13 → 15 → 22 años', big: true },
+    { id: 'ronin', x: 160, y: 420, icon: 'ronin', name: 'Ronin ciego', role: 'huele la flor' },
+    { id: 'criaturas', x: 840, y: 420, icon: 'oni', name: '30 criaturas', role: 'dragones, onis, yokais, kappas' },
+    { id: 'padres', x: 250, y: 596, icon: 'padres', name: 'Sus padres', role: 'mueren en el ataque' },
+    { id: 'viaje', x: 750, y: 596, icon: 'ruta', name: 'Encuentros', role: 'kitsune · tengu · kappa · bakeneko', group: ['kitsune', 'tengu', 'kappa', 'bakeneko'] },
+  ],
+  edges: [
+    ['dioses', 'marca', 'la crean'], ['marca', 'espiritu', 'encierra'], ['espiritu', 'dioses', 'desafió', 'rebel'],
+    ['marca', 'kusarigama', 'despierta y forja'], ['marca', 'kenji', 'se graba en su cuello'], ['kusarigama', 'kenji', 'lo arrastra y le habla'],
+    ['kenji', 'criaturas', 'caza · 14 caen'], ['ronin', 'kenji', 'le advierte'], ['padres', 'kenji', 'lo esconden'], ['viaje', 'kenji', 'le revelan la verdad'],
+  ],
+};
+const NW = (n) => (n.big ? 240 : 210), NH = (n) => (n.group ? 76 : n.big ? 70 : 62);
+function edgePts(a, b) {
+  // de borde a borde de los contenedores
+  const dx = b.x - a.x, dy = b.y - a.y;
+  const cut = (n, sx, sy) => { const hw = NW(n) / 2 + 6, hh = NH(n) / 2 + 6; const k = Math.min(Math.abs(sx) > 1e-6 ? hw / Math.abs(sx) : 1e9, Math.abs(sy) > 1e-6 ? hh / Math.abs(sy) : 1e9); return [n.x + sx * k, n.y + sy * k]; };
+  const len = Math.hypot(dx, dy), ux = dx / len, uy = dy / len;
+  return [cut(a, ux, uy), cut(b, -ux, -uy)];
+}
+function drawNode(c, n, a, time) {
+  const w = NW(n), h = NH(n), x = n.x - w / 2, y = n.y - h / 2;
+  c.save(); c.globalAlpha = a;
+  if (n.hot) { const g = c.createRadialGradient(n.x, n.y, 0, n.x, n.y, 170); g.addColorStop(0, C.glowA(0.22 + 0.08 * Math.sin(time * 2))); g.addColorStop(1, C.glowA(0)); c.fillStyle = g; c.fillRect(n.x - 170, n.y - 120, 340, 240); }
+  c.fillStyle = 'rgba(14,10,10,0.92)'; c.fillRect(x, y, w, h);
+  c.strokeStyle = n.hot ? 'rgba(224,48,58,0.85)' : C.boneA(0.35); c.lineWidth = n.hot || n.big ? 1.6 : 1; c.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
+  c.strokeStyle = C.boneA(0.1); c.lineWidth = 1; c.strokeRect(x + 4.5, y + 4.5, w - 9, h - 9);
+  c.strokeStyle = 'rgba(200,24,34,0.8)'; c.lineWidth = 2; c.beginPath(); c.moveTo(x, y + 10); c.lineTo(x, y); c.lineTo(x + 10, y); c.stroke();
+  drawIcon(c, n.icon, x + 28, n.y - (n.group ? 10 : 0), n.big ? 30 : 26);
+  c.textAlign = 'left'; c.textBaseline = 'middle';
+  c.fillStyle = '#f1ebe2'; c.font = `700 ${n.big ? 18 : 15}px "Shippori Mincho B1", serif`; c.fillText(n.name, x + 52, n.y - (n.group ? 18 : 9));
+  c.fillStyle = C.boneA(0.75); c.font = '12px "Zen Old Mincho", serif'; c.fillText(n.role, x + 52, n.y + (n.group ? -1 : 11));
+  if (n.group) n.group.forEach((id, i) => drawIcon(c, id, x + 64 + i * 30, n.y + 22, 20));
+  c.restore();
+}
+function drawEdge(c, a, b, label, kind, p, alpha) {
+  const [s, e] = edgePts(a, b), x = s[0] + (e[0] - s[0]) * p, y = s[1] + (e[1] - s[1]) * p;
+  c.save(); c.globalAlpha = alpha;
+  c.strokeStyle = kind === 'rebel' ? 'rgba(224,48,58,0.9)' : C.boneA(0.7); c.lineWidth = kind === 'rebel' ? 1.6 : 1.4;
+  if (kind === 'rebel') c.setLineDash([6, 5]);
+  c.beginPath(); c.moveTo(s[0], s[1]); c.lineTo(x, y); c.stroke(); c.setLineDash([]);
+  if (p > 0.98) { const ang = Math.atan2(e[1] - s[1], e[0] - s[0]); c.fillStyle = c.strokeStyle; c.beginPath(); c.moveTo(e[0], e[1]); c.lineTo(e[0] - Math.cos(ang - 0.4) * 10, e[1] - Math.sin(ang - 0.4) * 10); c.lineTo(e[0] - Math.cos(ang + 0.4) * 10, e[1] - Math.sin(ang + 0.4) * 10); c.closePath(); c.fill();
+    const mx = (s[0] + e[0]) / 2, my = (s[1] + e[1]) / 2; c.font = 'italic 13px "Zen Old Mincho", serif'; const tw = c.measureText(label).width;
+    c.fillStyle = 'rgba(16,12,12,0.94)'; c.fillRect(mx - tw / 2 - 6, my - 9, tw + 12, 18); c.fillStyle = kind === 'rebel' ? '#ff8a8a' : '#e9e2d8'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(label, mx, my + 1); }
+  c.restore();
+}
+
+export function defineSchema(stage) {
+  const N = Object.fromEntries(SCHEMA.nodes.map((n) => [n.id, n]));
+  // orden de aparición (dosificado): nodo, nodo, conector…
+  const seq = ['dioses', 'marca', 'e0', 'espiritu', 'e1', 'e2', 'kusarigama', 'e3', 'kenji', 'e4', 'e5', 'criaturas', 'e6', 'ronin', 'e7', 'padres', 'e8', 'viaje', 'e9'];
+  stage.define('esquema', {
+    layers: [
+      bg([500, 330, 700, 'rgba(70,62,62,0.5)']),
+      { depth: 0.12, paint: (ctx, L) => art(ctx, L, (c) => { mountains(c, { x0: -300, x1: 1300, base: 700, amp: 90, color: 'rgba(230,226,220,0.06)', fade: 60, seed: 141, rim: 0.2 });
+        c.fillStyle = '#efe9e1'; c.font = '700 20px "Shippori Mincho B1", serif'; c.textAlign = 'left'; c.fillText('Quién ata a quién', 24, 690);
+        c.fillStyle = C.boneA(0.55); c.font = '500 9.5px "IBM Plex Sans", sans-serif'; c.fillText('ESQUEMA DE RELACIONES · CONTENEDORES Y CONECTORES', 24, 708);
+        c.fillStyle = C.boneA(0.6); c.font = '11px "IBM Plex Sans", sans-serif'; c.textAlign = 'right'; c.fillText('— relación', 976, 690); c.fillStyle = '#ff8a8a'; c.fillText('- - - rebelión', 976, 708); }) },
+    ],
+    dynDepth: 0.2,
+    dyn(ctx, L, st) {
+      const t = st.key === 'pregunta' ? st.tpSlow : 1, step = 0.85 / seq.length;
+      art(ctx, L, (c) => {
+        // conectores debajo de los contenedores
+        seq.forEach((id, k) => { if (id[0] !== 'e' || N[id]) return; const E = SCHEMA.edges[+id.slice(1)], p = ramp(t, k * step, k * step + step * 1.4); if (p > 0) drawEdge(c, N[E[0]], N[E[1]], E[2], E[3], p, 1); });
+        seq.forEach((id, k) => { if (!N[id]) return; const a = ramp(t, k * step, k * step + step); if (a > 0) drawNode(c, N[id], a, st.time); });
       });
     },
   });

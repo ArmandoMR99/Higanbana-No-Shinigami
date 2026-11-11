@@ -1,9 +1,9 @@
 // Contenido canónico de Higanbana no Shinigami.
 // Cada capítulo se divide en pasajes. Un pasaje tiene:
-//   key   -> el encuadre / momento 3D que lo acompaña (definido en js/scenes/chX.js)
+//   key   -> la escena que lo acompaña (ver SPEC en js/main.js)
 //   paras -> párrafos que se muestran en el pergamino lateral
 //   cine  -> frase que aparece sola, a pantalla completa (estilo cine)
-//   len   -> cuántas pantallas de scroll dura (por defecto 1; los interactivos duran más)
+//   len   -> cuántos pasos dura (por defecto 1; con len ≥ párrafos, un párrafo por paso)
 //   hint  -> instrucción breve para las partes interactivas
 
 export const CHAPTERS = [
@@ -14,6 +14,7 @@ export const CHAPTERS = [
     reading: 'shūbun',
     name: 'Cuando florecen los muertos',
     sub: 'Equinoccio de otoño',
+    act: 'Inicio',
     icon: 'leaf',
     passages: [
       { key: 'bosque', paras: [
@@ -21,7 +22,7 @@ export const CHAPTERS = [
         'Los padres usaban la historia para mantener a sus hijos lejos del bosque. Kenji, como casi todos los muchachos de Akabana, pensaba que era solo un cuento para asustarlos.',
       ] },
       { key: 'bosque2', cine: 'Hasta que le tocó comprobarlo.' },
-      { key: 'flor', paras: [
+      { key: 'flor', len: 2, hint: 'Avanza para ver la flor de cerca y rozarla', paras: [
         'Tenía trece años y era el equinoccio de otoño, la semana en que los lirios rojos cubren los caminos. Aquella tarde había entrado al bosque a juntar leña y terminó persiguiendo algo que creyó ver moverse entre los bambúes. Cuando se dio cuenta, el pueblo había quedado muy atrás. Buscando el camino de regreso encontró una flor solitaria, roja como una herida abierta. Se agachó para verla mejor y, sin pensarlo, rozó uno de sus pétalos.',
         'Al principio no pasó nada. Después sintió un pinchazo helado en la garganta, como si le hubieran clavado una aguja. Cayó al suelo con las manos en el cuello, ahogándose con su propia saliva, convencido de que se estaba muriendo. Cuando por fin pudo levantarse, la flor ya no estaba.',
       ] },
@@ -35,9 +36,9 @@ export const CHAPTERS = [
         'No aceptó más hospitalidad. Se marchó por el camino del norte y nadie volvió a verlo.',
       ] },
       { key: 'ronin2', cine: 'El cobro llegó tres noches después.' },
-      { key: 'valle', len: 3, hint: 'Avanza para consumir el incienso · toca un barrio para leer su ema', paras: [
+      { key: 'valle', len: 4, hint: 'Avanza para consumir el incienso · toca un barrio para leer su ema', paras: [
         'A las diez de la noche el cielo se tiñó de un morado enfermizo y la lluvia cayó con tanta fuerza que no se veía nada a dos pasos. En el altar de la casa, la varilla de incienso que su madre encendía cada noche apenas empezaba a consumirse. Primero se escuchó un rugido sobre las nubes. Luego, gritos.',
-        'Esa noche vivían en el valle de Yomigawa 312 personas, repartidas en cinco barrios: Akabana, Takegawa, Hikarizaka, Tsukimori y Kurokawa. En menos de una hora llegaron treinta criaturas. De las montañas del norte bajaron doce dragones con escamas de hueso, y detrás de ellos siete onis que entraron por los senderos incendiando las casas con antorchas de fuego azul.',
+        'Esa noche vivían en el valle de Yomigawa 312 personas, repartidas en cinco barrios: Akabana, Takegawa, Hikarizaka, Tsukimori y Kurokawa. En apenas una hora llegaron treinta criaturas. De las montañas del norte bajaron doce dragones con escamas de hueso, y detrás de ellos siete onis que entraron por los senderos incendiando las casas con antorchas de fuego azul.',
         'Por el río subieron cuatro kappas hacia Takegawa, y entre el humo se movían siete yokais que nadie supo nombrar. A las diez y cinco ardió Akabana, el barrio más cercano a la montaña; a las diez y cuarto, los muelles de Takegawa.',
         'Kenji intentó correr hacia el camino, pero sus padres lo arrastraron hasta el almacén de arroz, lo empujaron adentro y atrancaron la puerta por fuera.',
       ] },
@@ -54,6 +55,7 @@ export const CHAPTERS = [
     reading: 'amayo',
     name: 'La noche que llovió sangre',
     sub: 'Noche de lluvia',
+    act: 'Nudo',
     icon: 'drop',
     passages: [
       { key: 'despertar', paras: [
@@ -75,12 +77,12 @@ export const CHAPTERS = [
       ] },
       { key: 'anillo', len: 2, hint: 'Toca una criatura del anillo para abrir su ficha', paras: [
         'Después, el arma siguió tirando de él. Hacia la calle. Hacia el fuego. Hacia todo lo que se movía.',
-        'Lo que pasó después lo recordaría solo a pedazos: la lluvia, el rugido de un dragón partiéndose en dos, el peso de la cadena girando sobre su cabeza. La fuerza que lo arrastraba era demasiado violenta para un cuerpo de quince años. La vista se le llenó de manchas rojas y cayó desmayado en el barro.',
+        'De lo que siguió recordaría solo pedazos: la lluvia, el rugido de un dragón partiéndose en dos, el peso de la cadena girando sobre su cabeza. La fuerza que lo arrastraba era demasiado violenta para un cuerpo de quince años. La vista se le llenó de manchas rojas y cayó desmayado en el barro.',
       ] },
       { key: 'amanecer', len: 2, hint: 'Avanza: el incienso termina de consumirse', paras: [
         'A las once de la noche, el incienso del altar terminó de consumirse. Para entonces el fuego había alcanzado Hikarizaka, Tsukimori y, por último, Kurokawa, el barrio más lejano: no quedaba un rincón del valle sin tocar.',
         'Despertó cuando el sol intentaba colarse entre el humo. Ya no llovía. Solo quedaba un silencio pesado, de esos que duelen en los oídos.',
-        'A su alrededor estaban los cuerpos de los vecinos, pero también los restos de catorce criaturas y los cadáveres cercenados de dos dragones colosales. Todo cortado con una precisión que ningún humano habría podido lograr. Las otras dieciséis bestias habían huido hacia las montañas antes del amanecer.',
+        'A su alrededor estaban los cuerpos de los vecinos, pero también los restos de catorce criaturas, entre ellos los cadáveres cercenados de dos dragones colosales. Todo cortado con una precisión que ningún humano habría podido lograr. Las otras dieciséis bestias habían huido hacia las montañas antes del amanecer.',
         'Junto a su mano, la kusarigama yacía clavada en el barro, limpia, como si hubiera bebido hasta la última gota de sangre.',
       ] },
       { key: 'ruinas', paras: [
@@ -94,7 +96,7 @@ export const CHAPTERS = [
       ] },
       { key: 'partida2', cine: 'O algo mucho peor.' },
       { key: 'camino', paras: [
-        'Sin casa a la que volver y sin familia a la que enterrar, se echó la cadena al hombro y caminó hacia los caminos de montaña.',
+        'Sin casa a la que volver y sin familia a la que enterrar, se echó la cadena al hombro y se internó en los caminos de montaña.',
       ] },
     ],
   },
@@ -105,13 +107,14 @@ export const CHAPTERS = [
     reading: 'fuyu',
     name: 'Siete inviernos',
     sub: 'Invierno',
+    act: 'Desenlace',
     icon: 'snow',
     passages: [
-      { key: 'recuento', len: 2, hint: 'El humo de cada barrio y sus farolillos: lo que quedó del valle', paras: [
+      { key: 'recuento', len: 2, onepage: true, hint: 'El humo de cada barrio y sus farolillos: lo que quedó del valle', paras: [
         'Desde el camino de montaña, Kenji miró el valle por última vez. De sus 312 habitantes, 184 habían muerto, 68 estaban heridos y solo 60 habían salido ilesos. Akabana, su barrio, había perdido ocho de cada diez casas; Kurokawa, apenas dos de cada diez.',
         'Los primeros meses fueron un infierno. Kenji no sabía pelear, pero la kusarigama lo arrastraba cada vez que olía a una criatura que rompía el orden de los dioses. Cruzó pueblos destruidos y bosques olvidados, y se topó con seres que solo conocía por los cuentos de su madre.',
       ] },
-      { key: 'viaje', len: 3, hint: 'Avanza para recorrer el viaje', paras: [
+      { key: 'viaje', len: 4, hint: 'Avanza para recorrer el viaje', paras: [
         'En un templo abandonado conoció a una kitsune con la apariencia de una niña pequeña. Fue la primera que no lo atacó. Miró la marca de su cuello con lástima y le dijo que esa flor olía a azufre y a castigo divino.',
         'En la cumbre de una montaña nevada se enfrentó a un tengu orgulloso. Antes de que la guadaña lo decapitara, le escupió en la cara: —Los dioses jamás premian a sus perros.',
         'A la orilla de un río seco, un kappa intentó arrastrarlo al fondo. No quería comérselo: quería salvarlo del arma, ahogándolo antes de que fuera demasiado tarde.',
@@ -154,7 +157,7 @@ export const BARRIOS = [
     ambient: 'Barrio de Kenji, el más cercano a la montaña. Casas de madera y el almacén de arroz.',
     story: 'Fue el primero en arder. Aquí murieron los padres de Kenji y aquí nació el arma.' },
   { id: 'takegawa', name: 'Takegawa', kanji: '竹川', meaning: 'Río de bambú', dmg: 65, ignite: 15, hab: 70, dead: 49, hurt: 14, safe: 7, cre: { dragon: 3, oni: 1, yokai: 1, kappa: 3 }, x: 68, y: 35,
-    ambient: 'Junto al río, rodeado de bambusales.',
+    ambient: 'Junto al río, rodeado de bosques de bambú.',
     story: 'Los kappas subieron por el río y los dragones quemaron los muelles. En su borde cayeron los dos dragones colosales.' },
   { id: 'hikarizaka', name: 'Hikarizaka', kanji: '光坂', meaning: 'Cuesta de luz', dmg: 50, ignite: 30, hab: 60, dead: 33, hurt: 15, safe: 12, cre: { dragon: 2, oni: 2, yokai: 2, kappa: 0 }, x: 42, y: 50,
     ambient: 'Calle empinada con faroles y el templo.',
@@ -177,10 +180,10 @@ export const NIGHT = [
 ];
 
 export const CRIATURAS = [
-  { id: 'dragon', name: 'Dragones', kanji: '竜', count: 12, defeated: 2, deaths: 82, how: 'Bajan de las nubes desde las montañas del norte.', look: 'Escamas de hueso bajo un cielo morado. Dos de ellos eran colosales.' },
-  { id: 'oni', name: 'Onis', kanji: '鬼', count: 7, defeated: 6, deaths: 42, how: 'Entran por los senderos con antorchas de fuego azul.', look: 'Piel gris, garrotes y fuego azul: el único color frío de la noche.' },
-  { id: 'yokai', name: 'Yokais', kanji: '妖', count: 7, defeated: 4, deaths: 38, how: 'Se mueven entre el humo, sin forma fija.', look: 'Siluetas difusas que nadie supo nombrar.' },
-  { id: 'kappa', name: 'Kappas', kanji: '河童', count: 4, defeated: 2, deaths: 22, how: 'Suben por el río hacia Takegawa.', look: 'Caparazón y un plato de agua en la cabeza.' },
+  { id: 'dragon', name: 'Dragones', kanji: '竜', count: 12, defeated: 2, deaths: 82, how: 'Bajan de las nubes desde las montañas del norte.', look: 'Escamas de hueso bajo un cielo morado. Dos de ellos eran colosales.', anat: [[21, 47, 'Cabeza con ojos rojos'], [13, 30, 'Bigotes como látigos'], [62, 38, 'Escamas de hueso'], [36, 72, 'Garras en las patas'], [86, 56, 'Cola de serpiente']] },
+  { id: 'oni', name: 'Onis', kanji: '鬼', count: 7, defeated: 6, deaths: 42, how: 'Entran por los senderos con antorchas de fuego azul.', look: 'Piel gris, garrotes y fuego azul: el único color frío de la noche.', anat: [[50, 17, 'Cuernos'], [36, 42, 'Antorcha de fuego azul'], [71, 45, 'Garrote'], [50, 70, 'Piel gris']] },
+  { id: 'yokai', name: 'Yokais', kanji: '妖', count: 7, defeated: 4, deaths: 38, how: 'Se mueven entre el humo, sin forma fija.', look: 'Siluetas difusas que nadie supo nombrar.', anat: [[50, 40, 'Ojos rojos'], [44, 22, 'Silueta difusa'], [57, 80, 'Cola de humo, sin pies']] },
+  { id: 'kappa', name: 'Kappas', kanji: '河童', count: 4, defeated: 2, deaths: 22, how: 'Suben por el río hacia Takegawa.', look: 'Caparazón y un plato de agua en la cabeza.', anat: [[73, 42, 'Plato de agua en la cabeza'], [48, 47, 'Caparazón'], [32, 66, 'Patas palmeadas']] },
 ];
 
 // Tabla C: la marca y la memoria a través de los años.
@@ -196,11 +199,11 @@ export const MARCA = [
 ];
 
 export const PIEZAS = [
-  { id: 'nucleo', name: 'Núcleo Tóxico', desc: 'Sangre y veneno de lirio. El corazón del arma.' },
-  { id: 'vascular', name: 'Sistema Vascular', desc: 'Venas que unen la sangre de Kenji con el arma.' },
-  { id: 'cadena', name: 'Cadena Carmesí', desc: 'Eslabones orgánicos que se extienden a voluntad.' },
+  { id: 'nucleo', name: 'Núcleo tóxico', desc: 'Sangre y veneno de lirio. El corazón del arma.' },
+  { id: 'vascular', name: 'Sistema vascular', desc: 'Venas que unen la sangre de Kenji con el arma.' },
+  { id: 'cadena', name: 'Cadena carmesí', desc: 'Eslabones orgánicos que se extienden a voluntad.' },
   { id: 'empunadura', name: 'Empuñadura', desc: 'Vendas rituales que aíslan el calor.' },
-  { id: 'hoja', name: 'Hoja Carmesí', desc: 'Cuchilla de sangre que regenera sus bordes.' },
+  { id: 'hoja', name: 'Hoja carmesí', desc: 'Cuchilla de sangre que regenera sus bordes.' },
   { id: 'relieve', name: 'Relieve del lirio', desc: 'Sello que reacciona con la marca del cuello.' },
 ];
 

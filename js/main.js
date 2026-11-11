@@ -16,9 +16,10 @@ import { buildForge } from './scenes/forge.js';
 import { Stage } from './two/stage.js';
 import { FX } from './two/fx.js';
 import { defineValley } from './two/valley2d.js';
-import { defineViews, paintPanel } from './two/views.js';
+import { defineViews, defineSchema, paintPanel } from './two/views.js';
 import { canvas } from './two/brush.js';
 import { Music } from './audio.js';
+import { buildCodex } from './codex.js';
 
 // ---------- Qué acompaña a cada pasaje ----------
 // v: escena 2D · s: escena 3D (lily | forge) · fx: partículas · mood: música
@@ -38,7 +39,7 @@ const SPEC = {
   },
   3: {
     recuento: { v: 'recuento', fx: { ash: 0.6 }, mood: 'dawn' }, viaje: { v: 'emaki', mood: 'calm' },
-    pesadilla: { v: 'invierno', fx: { snow: 1 }, mood: 'snow' }, pregunta: { v: 'invierno', fx: { snow: 1 }, mood: 'snow' }, leyenda: { v: 'invierno', fx: { snow: 1 }, mood: 'snow' },
+    pesadilla: { v: 'invierno', fx: { snow: 1 }, mood: 'snow' }, pregunta: { v: 'esquema', fx: { snow: 0.4 }, mood: 'snow' }, leyenda: { v: 'invierno', fx: { snow: 1 }, mood: 'snow' },
     invierno: { v: 'invierno', fx: { snow: 0.7, embers: 0.5 }, mood: 'fire' }, invierno2: { v: 'invierno', fx: { snow: 0.5, embers: 0.5 }, mood: 'fire' },
     eleccion: { v: 'invierno', fx: { snow: 0.8 }, mood: 'snow' }, eleccion2: { v: 'invierno', fx: { snow: 0.6 }, mood: 'redemption' },
     final: { s: 'lily', fx: { petals: 1 }, mood: 'redemption' },
@@ -75,17 +76,18 @@ const stage = new Stage(document.getElementById('stage'));
 const fx = new FX(document.getElementById('fx'));
 defineValley(stage, { onBarrio: (b) => { showEma(b); music.sfx('open'); } });
 defineViews(stage, { onBestia: (id, cb) => { showBestia(id, cb); music.sfx('open'); } });
+defineSchema(stage);
 
-const reader = new Reader(document.getElementById('reader'), { onEnd: (go) => (go === 'menu' ? toMenu() : go === 'about' ? openAbout() : openChapter(+go)), onStep: () => music.sfx('step') });
+const reader = new Reader(document.getElementById('reader'), { onEnd: (go) => (go === 'menu' ? toMenu() : go === 'about' ? openAbout() : go === 'codex' ? openCodex() : openChapter(+go)), onStep: () => music.sfx('step') });
 
 let mode = 'intro', chapter = 0, hover = 0;
 const cam = { pos: new THREE.Vector3(...lily.frames.menu.pos), look: new THREE.Vector3(...lily.frames.menu.look), shift: 0 };
 let active3d = lily;
 let fly = null;
-const arrive = { i: -1, ch: 0, time: 0 };
+const arrive = { i: -1, ch: 0, time: 0 }, stepAt = { k: -1, ch: 0, time: 0 };
 // efectos sincronizados con las animaciones (capítulo, pasaje, momento 0..1)
 const CUES = [
-  { ch: 1, key: 'flor', at: 0.4, sfx: 'mark' }, { ch: 1, key: 'ronin', at: 0.48, sfx: 'bowl' },
+  { ch: 1, key: 'flor', step: 1, at: 0.25, sfx: 'mark' }, { ch: 1, key: 'ronin', at: 0.48, sfx: 'bowl' },
   { ch: 1, key: 'almacen', at: 0.42, sfx: 'hit' }, { ch: 2, key: 'despertar', at: 0.05, sfx: 'heart' },
   { ch: 2, key: 'despertar', at: 0.75, sfx: 'mark' }, { ch: 3, key: 'eleccion2', at: 0.1, sfx: 'mark' },
 ];
@@ -105,9 +107,9 @@ menu.innerHTML = CHAPTERS.map((c, i) => `
     <span class="art"></span>
     <span class="kanji" lang="ja">${c.kanji}</span>
     <span class="num">${c.roman}</span>
-    <span class="sub">${c.roman} · ${c.sub}</span>
+    <span class="sub">${c.act} · ${c.sub}</span>
     <span class="name">${c.name}</span>
-  </button>`).join('') + '<div class="menu-foot"><span><b>●</b>Clic · Entrar</span><span><b>esc</b>Volver</span><button id="btn-about">Sobre el proyecto</button></div>';
+  </button>`).join('') + '<div class="menu-foot"><span><b>●</b>Clic · Entrar</span><span><b>esc</b>Volver</span><button id="btn-codex">Códice del valle</button><button id="btn-about">Sobre el proyecto</button></div>';
 const panels = [...menu.querySelectorAll('.panel')];
 function paintPanels() {
   panels.forEach((p, i) => { const box = p.querySelector('.art'); box.innerHTML = ''; const r = p.getBoundingClientRect(); if (r.width < 10) return; const cv = canvas(r.width, r.height); paintPanel(i, cv); box.appendChild(cv); });
@@ -141,6 +143,7 @@ function enterSite() {
 }
 document.getElementById('intro').addEventListener('click', enterSite);
 
+let pendingJump = null;
 function openChapter(n) {
   hideCard();
   const i = n - 1; hover = i;
@@ -148,6 +151,7 @@ function openChapter(n) {
   const go = () => {
     chapter = n;
     reader.load(CHAPTERS[i], CHAPTERS);
+    if (pendingJump) { const { key, step } = pendingJump; pendingJump = null; const k = reader.sections.findIndex((s) => s.key === key && !s.head && !s.end && !s.cine); if (k > 0) reader.jump(k, step / reader.sections[k].len); }
     if (n === 2) forge.setPlaced(0);
     mode = 'reader';
     body.className = `state-reader ch-${n}`;
@@ -171,8 +175,8 @@ addEventListener('click', (e) => {
   active3d.pick(app.mouse, false);
 });
 addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') { if (!about.hidden) closeAbout(); else if (cardOpen()) hideCard(); else if (mode === 'reader') toMenu(); return; }
-  if (!about.hidden) return;
+  if (e.key === 'Escape') { if (!codexEl.hidden) closeCodex(); else if (!about.hidden) closeAbout(); else if (cardOpen()) hideCard(); else if (mode === 'reader') toMenu(); return; }
+  if (!about.hidden || !codexEl.hidden) return;
   if (mode === 'intro' && (e.key === 'Enter' || e.key === ' ')) { enterSite(); e.preventDefault(); return; }
   if (mode === 'menu') {
     if (e.key === 'ArrowRight') selectPanel((hover + 1) % 3);
@@ -194,7 +198,13 @@ const about = document.getElementById('about');
 const openAbout = () => { about.hidden = false; music.sfx('open'); };
 const closeAbout = () => { about.hidden = true; };
 about.addEventListener('click', (e) => { if (e.target === about || e.target.closest('.about-close')) closeAbout(); });
-menu.addEventListener('click', (e) => { if (e.target.closest('#btn-about')) { e.stopPropagation(); openAbout(); } }, true);
+menu.addEventListener('click', (e) => { if (e.target.closest('#btn-about')) { e.stopPropagation(); openAbout(); } if (e.target.closest('#btn-codex')) { e.stopPropagation(); openCodex(); } }, true);
+// códice: guía de la infografía (esquema narrativo, íconos, índice de visualizaciones, proceso)
+const codexEl = document.getElementById('codex');
+const openCodex = (tab) => { closeAbout(); codexEl.hidden = false; reader.enabled = false; music.sfx('open'); if (tab) codex.show(tab); };
+const closeCodex = () => { codexEl.hidden = true; if (mode === 'reader') reader.enabled = true; };
+const codex = buildCodex(codexEl, { onClose: closeCodex, sfx: () => music.sfx('step'), onGo: (ch, key, step) => { codexEl.hidden = true; pendingJump = { key, step }; if (mode === 'reader' && chapter === ch) { const k = reader.sections.findIndex((s) => s.key === key && !s.head && !s.end && !s.cine); pendingJump = null; reader.enabled = true; reader.jump(k, step / reader.sections[k].len); } else openChapter(ch); } });
+about.addEventListener('click', (e) => { if (e.target.closest('.link-codex')) openCodex(); });
 
 addEventListener('resize', () => {
   camera.aspect = innerWidth / innerHeight;
@@ -205,16 +215,19 @@ addEventListener('resize', () => {
 ink.uniforms.resolution.value.set(innerWidth * renderer.getPixelRatio(), innerHeight * renderer.getPixelRatio());
 
 // ---------- Estado de cada escena según el pasaje ----------
-function viewParams(ch, key, t, L) {
-  const tIn = L > 1 ? clamp(t * L / (L - 1)) : t;
-  const P = { t };
-  if (key === 'valle') P.valley = { m: clamp(t * L / (L - 0.6)) * 20 };
+// Los pasajes largos avanzan por pasos; en cada paso la animación se reproduce sola (ts: 0 → 1).
+// si: paso actual dentro del pasaje. Así los datos aparecen en secuencia y dosificados.
+const VALLE_M = [0, 4, 9, 16, 20];
+function viewParams(ch, key, t, L, ts = 1) {
+  const si = Math.min(L - 1, Math.floor(t * L + 0.02)), e = smooth(clamp(ts));
+  const P = { t, si, ts: e };
+  if (key === 'valle') P.valley = { m: lerp(VALLE_M[si], VALLE_M[si + 1], e) };
   else if (key === 'almacen' || key === 'despertar') P.valley = { m: 20 };
   if (key === 'amanecer') {
-    const k = clamp(t * L / (L - 0.5)), m = 20 + clamp(k / 0.75) * 40;
-    P.valley = { m, dawn: clamp((k - 0.8) / 0.2), heat: clamp((m - 35) / 25), trail: clamp((m - 32) / 26) };
+    const m = si === 0 ? 20 + 40 * clamp(e / 0.8) : 60;
+    P.valley = { m, dawn: si === 0 ? clamp((e - 0.8) / 0.2) : 1, heat: clamp((m - 35) / 25), trail: clamp((m - 32) / 26), bars: si === 0 ? 0 : e };
   }
-  if (key === 'recuento') P.recuento = { cols: clamp(tIn * 1.9), lan: clamp((tIn - 0.6) * 2.6) };
+  if (key === 'recuento') P.recuento = si === 0 ? { cols: e, lan: 0 } : { cols: 1, lan: e };
   return P;
 }
 
@@ -273,7 +286,12 @@ function loop() {
     const S = reader.sections, i = reader.i, t = reader.t;
     if (arrive.i !== i || arrive.ch !== chapter) { arrive.i = i; arrive.ch = chapter; arrive.time = time; firedCues.clear(); }
     const tp = clamp((time - arrive.time - 0.35) / 4.2); // animación que se reproduce sola al llegar al pasaje
+    const tpSlow = clamp((time - arrive.time - 0.35) / 10); // para las escenas con más datos (ficha botánica, esquema)
+    const tgt = Math.round(reader.target);
+    if (stepAt.k !== tgt || stepAt.ch !== chapter) { stepAt.k = tgt; stepAt.ch = chapter; stepAt.time = time; }
     const A = S[i], B = S[i + 1] || A, L = A.len || 1;
+    const si = Math.min(L - 1, Math.floor(t * L + 0.02));
+    const ts = tgt === A.start + si ? clamp((time - stepAt.time - 0.3) / 3.6) : 1; // paso en reposo: se anima; de paso: completo
     const k = L > 1 ? clamp(t * L - (L - 1)) : t;
     const e = smooth(clamp(k));
     const sa = SPEC[chapter][A.key] || {}, sb = SPEC[chapter][B.key] || sa;
@@ -282,8 +300,8 @@ function loop() {
     const wa = same ? 1 : 1 - smooth(clamp((k - 0.18) / 0.36)), wb = same ? 0 : smooth(clamp((k - 0.46) / 0.36));
     const scales = {};
     const views = {};
-    if (sa.v) { weights[sa.v] = (weights[sa.v] || 0) + wa; views[sa.v] = { key: A.key, tp, ...viewParams(chapter, A.key, t, L) }; }
-    if (sb.v && wb > 0) { weights[sb.v] = (weights[sb.v] || 0) + wb; if (!views[sb.v]) views[sb.v] = { key: B.key, tp: 0, ...viewParams(chapter, B.key, 0, B.len || 1) }; }
+    if (sa.v) { weights[sa.v] = (weights[sa.v] || 0) + wa; views[sa.v] = { key: A.key, tp, tpSlow, ...viewParams(chapter, A.key, t, L, ts) }; }
+    if (sb.v && wb > 0) { weights[sb.v] = (weights[sb.v] || 0) + wb; if (!views[sb.v]) views[sb.v] = { key: B.key, tp: 0, tpSlow: 0, ...viewParams(chapter, B.key, 0, B.len || 1, 0) }; }
     if (!same) { if (sa.v) scales[sa.v] = 1 + 0.025 * (1 - wa); if (sb.v) scales[sb.v] = 1.04 - 0.04 * wb; }
     w3 = (sa.s ? wa : 0) + (sb.s ? wb : 0);
     // 3D: escena y encuadre
@@ -300,7 +318,7 @@ function loop() {
     music.setMood(e < 0.5 ? sa.mood : sb.mood);
     // sonidos atados a lo que pasa en la escena
     const cueKey = S[reader.active]?.key;
-    for (const c of CUES) if (c.key === cueKey && c.ch === chapter && tp >= c.at && !firedCues.has(c)) { firedCues.add(c); music.sfx(c.sfx); }
+    for (const c of CUES) if (c.key === cueKey && c.ch === chapter && (c.step !== undefined ? A.key === c.key && si === c.step && ts >= c.at : tp >= c.at) && !firedCues.has(c)) { firedCues.add(c); music.sfx(c.sfx); }
     stage.frame(weights, { key: A.key, t, time, dt, ch: chapter, views }, scales);
     if (fly) { fly.t += dt / 1.2; if (fly.t >= 1) fly = null; }
   }
@@ -334,7 +352,7 @@ function loop() {
 }
 
 // fuentes antes de pintar los lienzos (si no, el texto de las gráficas queda con letra de reemplazo)
-const ALL_VIEWS = ['bosque', 'flor', 'rio', 'ronin', 'valle', 'almacen', 'despertar', 'latido', 'enso', 'ruinas', 'camino', 'recuento', 'emaki', 'invierno'];
+const ALL_VIEWS = ['bosque', 'flor', 'rio', 'ronin', 'valle', 'almacen', 'despertar', 'latido', 'enso', 'ruinas', 'camino', 'recuento', 'emaki', 'invierno', 'esquema'];
 Promise.race([
   Promise.all(['700 20px "Shippori Mincho B1"', '16px "Zen Old Mincho"', '12px "IBM Plex Sans"'].map((f) => document.fonts.load(f))),
   new Promise((r) => setTimeout(r, 3500)),
@@ -355,4 +373,4 @@ Promise.race([document.fonts.ready, new Promise((r) => setTimeout(r, 3500))]).th
   setLoad(0.9);
   setTimeout(() => { setLoad(1); setTimeout(() => { if (body.classList.contains('state-loading')) body.className = 'state-intro'; }, 500); }, Math.max(0, 900 - (performance.now() - t0)));
 });
-window.__app = { toMenu, openChapter, reader, enterSite, stage, get mode() { return mode; } };
+window.__app = { toMenu, openChapter, reader, enterSite, stage, openCodex, get mode() { return mode; } };

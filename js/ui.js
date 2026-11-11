@@ -1,6 +1,7 @@
 // Tarjetas: la ema de cada barrio y la ficha de cada bestia (Modo Bestias).
 import { BARRIOS, CRIATURAS, hhmm } from './story.js';
 import { creaturePortrait } from './two/brush.js';
+import { svgIcon } from './icons.js';
 const portraits = {};
 const portrait = (id) => (portraits[id] ||= creaturePortrait(id).toDataURL());
 
@@ -17,16 +18,16 @@ export function showEma(b) {
   const share = Math.round((b.dmg / total) * 100);
   card.className = '';
   body.innerHTML = `
-    <div class="m">Ema · barrio</div>
+    <div class="m">${svgIcon('ema', { size: 16 })} Ema · barrio</div>
     <div class="k" lang="ja">${b.kanji}</div>
     <div class="n">${b.name} <span style="opacity:.6">— ${b.meaning}</span></div>
     <p>${b.ambient}</p>
     <p>${b.story}</p>
     <div class="stats">
-      <div><b>${b.dmg} %</b><span>estructuras destruidas</span></div>
-      <div><b>${hhmm(b.ignite)}</b><span>hora en que ardió</span></div>
-      <div><b>${b.hab}</b><span>habitantes</span></div>
-      <div><b>${b.dead}</b><span>muertos · ${b.hurt} heridos · ${b.safe} ilesos</span></div>
+      <div>${svgIcon('fuego', { size: 18 })}<b>${b.dmg} %</b><span>estructuras destruidas</span></div>
+      <div>${svgIcon('reloj', { size: 18 })}<b>${hhmm(b.ignite)}</b><span>hora en que ardió</span></div>
+      <div>${svgIcon('farolillo', { size: 18 })}<b>${b.hab}</b><span>habitantes</span></div>
+      <div>${svgIcon('muerto', { size: 18 })}<b>${b.dead}</b><span>muertos · ${b.hurt} heridos · ${b.safe} ilesos</span></div>
     </div>
     <div class="bar" title="Parte de la destrucción total del valle"><i style="width:${share}%"></i></div>
     <span style="font-family:var(--f-data);font-size:.66rem;opacity:.75">${share} % de toda la destrucción del valle</span>`;
@@ -39,17 +40,18 @@ export function showBestia(id, onChange) {
   const total = CRIATURAS.reduce((s, x) => s + x.count, 0);
   card.className = 'bestia';
   body.innerHTML = `
-    <div class="m">Modo Bestias</div>
-    <img class="portrait" src="${portrait(c.id)}" alt="${c.name}">
+    <div class="m">${svgIcon(c.id, { size: 16 })} Modo Bestias · anatomía</div>
+    <div class="pwrap"><img class="portrait" src="${portrait(c.id)}" alt="${c.name}">${(c.anat || []).map(([x, y], k) => `<i class="pin" style="left:${x}%;top:${y}%">${k + 1}</i>`).join('')}</div>
+    <ol class="anat">${(c.anat || []).map(([, , t]) => `<li>${t}</li>`).join('')}</ol>
     <div class="k" lang="ja">${c.kanji}</div>
     <div class="n">${c.name}</div>
     <p>${c.how}</p>
     <p style="opacity:.75">${c.look}</p>
     <div class="stats">
-      <div><b>${c.count}</b><span>atacaron (${(c.count / total * 100).toFixed(1).replace('.', ',')} %)</span></div>
-      <div><b>${c.defeated}</b><span>derrotadas por Kenji</span></div>
-      <div><b>${c.deaths}</b><span>muertes causadas</span></div>
-      <div><b>${c.count - c.defeated}</b><span>huyeron al amanecer</span></div>
+      <div>${svgIcon(c.id, { size: 18 })}<b>${c.count}</b><span>atacaron (${(c.count / total * 100).toFixed(1).replace('.', ',')} %)</span></div>
+      <div>${svgIcon('derrota', { size: 18 })}<b>${c.defeated}</b><span>derrotadas por Kenji</span></div>
+      <div>${svgIcon('muerto', { size: 18 })}<b>${c.deaths}</b><span>muertes causadas</span></div>
+      <div>${svgIcon('huida', { size: 18 })}<b>${c.count - c.defeated}</b><span>huyeron antes del amanecer</span></div>
     </div>
     <div class="bar" title="Derrotadas sobre las que atacaron"><i style="width:${(c.defeated / c.count) * 100}%"></i></div>
     <div class="bestia-tabs">${CRIATURAS.map((x) => `<button data-id="${x.id}" class="${x.id === c.id ? 'on' : ''}" lang="ja" title="${x.name}">${x.kanji}</button>`).join('')}</div>`;

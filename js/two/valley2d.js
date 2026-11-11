@@ -2,6 +2,8 @@
 // Vistas: 'valle' (la noche del ataque, Cap. I y II) y 'recuento' (columnas y farolillos, Cap. III).
 import { C, rng, noise1, paper, mountains, brush, line, wash, house, callout, corners, frame, creature, spline, chartCard, axisLabel, cached } from './brush.js';
 import { BARRIOS, CRIATURAS, nightAt, hhmm } from '../story.js';
+import { drawIcon } from '../icons.js';
+import { JAPAN, JAPAN_PATH } from './japan.js';
 
 // tabla A (0..100) -> coordenadas del mapa (1000 x 720)
 const P = (b) => [b.x * 8.6 + 70, b.y * 5.4 + 150];
@@ -81,10 +83,56 @@ function paintMap(ctx, L) {
   ctx.restore();
   // título y rosa de los vientos
   ctx.fillStyle = C.boneA(0.75); ctx.font = '700 22px "Shippori Mincho B1", serif'; ctx.textAlign = 'left';
-  ctx.fillText('黄泉川', 26, 690); ctx.font = '12px "IBM Plex Sans", sans-serif'; ctx.fillStyle = C.boneA(0.5); ctx.fillText('VALLE DE YOMIGAWA', 100, 688);
-  ctx.strokeStyle = C.boneA(0.4); ctx.beginPath(); ctx.moveTo(40, 600); ctx.lineTo(40, 640); ctx.stroke(); ctx.fillStyle = C.boneA(0.6); ctx.font = '600 13px "Shippori Mincho B1", serif'; ctx.textAlign = 'center'; ctx.fillText('北', 40, 592);
-  ctx.fillText('山', 120, 36); ctx.font = '10px "IBM Plex Sans", sans-serif'; ctx.fillText('MONTAÑAS DEL NORTE', 120, 52);
+  ctx.save(); ctx.fillStyle = 'rgba(11,8,8,0.84)'; ctx.fillRect(14, 594, 207, 118); ctx.strokeStyle = C.boneA(0.2); ctx.lineWidth = 1; ctx.strokeRect(14.5, 594.5, 206, 117); ctx.restore();
+  ctx.fillStyle = C.boneA(0.75); ctx.font = '700 22px "Shippori Mincho B1", serif'; ctx.textAlign = 'left';
+  ctx.fillText('黄泉川', 26, 694); ctx.font = '11px "IBM Plex Sans", sans-serif'; ctx.fillStyle = C.boneA(0.6); ctx.fillText('VALLE DE YOMIGAWA', 98, 692);
+  ctx.fillStyle = 'rgba(224,80,80,0.85)'; ctx.font = '600 10px "IBM Plex Sans", sans-serif'; ctx.fillText('MAPA DE UBICACIÓN', 26, 664);
+  // escala gráfica
+  ctx.strokeStyle = C.boneA(0.6); ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(26, 640); ctx.lineTo(126, 640); ctx.moveTo(26, 635); ctx.lineTo(26, 645); ctx.moveTo(76, 637); ctx.lineTo(76, 643); ctx.moveTo(126, 635); ctx.lineTo(126, 645); ctx.stroke();
+  ctx.fillStyle = C.boneA(0.65); ctx.font = '10px "IBM Plex Sans", sans-serif'; ctx.textAlign = 'center'; ctx.fillText('0', 26, 630); ctx.fillText('300 m', 126, 630);
+  // norte
+  ctx.strokeStyle = C.boneA(0.5); ctx.beginPath(); ctx.moveTo(170, 646); ctx.lineTo(170, 612); ctx.moveTo(164, 620); ctx.lineTo(170, 610); ctx.lineTo(176, 620); ctx.stroke(); ctx.fillStyle = C.boneA(0.7); ctx.font = '600 13px "Shippori Mincho B1", serif'; ctx.fillText('北', 170, 602);
+  ctx.font = '600 13px "Shippori Mincho B1", serif'; ctx.fillText('山', 330, 36); ctx.font = '10px "IBM Plex Sans", sans-serif'; ctx.fillText('MONTAÑAS DEL NORTE', 330, 52);
+  paintInset(ctx); paintLegend(ctx);
   corners(ctx, 1000, 720, { size: 70, color: 'rgba(154,31,40,0.5)' });
+  ctx.restore();
+}
+
+// recuadro de ubicación: Japón y el valle
+function paintInset(ctx) {
+  const x = 18, y = 16, k = 0.74, w = JAPAN.w * k + 16, h = JAPAN.h * k + 40;
+  ctx.save();
+  ctx.fillStyle = 'rgba(11,8,8,0.86)'; ctx.fillRect(x, y, w, h); frame(ctx, x, y, w, h, { color: C.boneA(0.25) });
+  ctx.translate(x + 8, y + 8); ctx.scale(k, k);
+  const jp = new Path2D(JAPAN_PATH); ctx.fillStyle = 'rgba(195,191,185,0.2)'; ctx.fill(jp); ctx.strokeStyle = C.boneA(0.6); ctx.lineWidth = 1 / k; ctx.stroke(jp);
+  const [vx, vy] = JAPAN.valley, [kx, ky] = JAPAN.kyoto, [tx, ty] = JAPAN.tokyo;
+  ctx.fillStyle = C.boneA(0.7); for (const [a, b] of [[kx, ky], [tx, ty]]) { ctx.beginPath(); ctx.arc(a, b, 2 / k, 0, 7); ctx.fill(); }
+  ctx.font = `${9 / k}px "IBM Plex Sans", sans-serif`; ctx.textAlign = 'right'; ctx.fillText('Kioto', kx - 4 / k, ky + 12 / k); ctx.textAlign = 'left'; ctx.fillText('Tokio', tx + 4 / k, ty + 10 / k);
+  ctx.strokeStyle = C.glow; ctx.lineWidth = 1.4 / k; ctx.beginPath(); ctx.arc(vx, vy, 7 / k, 0, 7); ctx.stroke(); ctx.fillStyle = C.glow; ctx.beginPath(); ctx.arc(vx, vy, 2.6 / k, 0, 7); ctx.fill();
+  ctx.strokeStyle = 'rgba(224,48,58,0.7)'; ctx.lineWidth = 1 / k; ctx.beginPath(); ctx.moveTo(vx - 6 / k, vy - 5 / k); ctx.lineTo(28, 58); ctx.lineTo(4, 58); ctx.stroke();
+  ctx.restore();
+  ctx.save(); ctx.textAlign = 'left';
+  ctx.fillStyle = '#efe9e1'; ctx.font = '600 11px "Shippori Mincho B1", serif'; ctx.fillText('Japón · era Taishō', x + 10, y + h - 18);
+  ctx.fillStyle = C.boneA(0.6); ctx.font = '9px "IBM Plex Sans", sans-serif'; ctx.fillText('el valle, en los Alpes japoneses', x + 10, y + h - 6);
+  ctx.restore();
+}
+
+// leyenda del mapa (mismo sistema de íconos que el resto del sitio)
+function paintLegend(ctx) {
+  const x = 226, y = 640, w = 372, h = 72;
+  ctx.save();
+  ctx.fillStyle = 'rgba(11,8,8,0.82)'; ctx.fillRect(x, y, w, h); ctx.strokeStyle = C.boneA(0.2); ctx.lineWidth = 1; ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
+  ctx.font = '11px "IBM Plex Sans", sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+  const item = (cx, cy, draw, text) => { draw(cx + 9, cy); ctx.fillStyle = C.boneA(0.85); ctx.fillText(text, cx + 22, cy + 1); };
+  const r1 = y + 22, r2 = y + 52;
+  item(x + 12, r1, (a, b) => drawIcon(ctx, 'barrio', a, b, 16), 'Barrio');
+  item(x + 94, r1, (a, b) => drawIcon(ctx, 'rio', a, b, 16), 'Río');
+  item(x + 160, r1, (a, b) => { ctx.strokeStyle = C.boneA(0.7); ctx.setLineDash([3, 3]); ctx.beginPath(); ctx.moveTo(a - 8, b); ctx.lineTo(a + 8, b); ctx.stroke(); ctx.setLineDash([]); }, 'Camino');
+  item(x + 252, r1, (a, b) => drawIcon(ctx, 'montana', a, b, 16), 'Montañas');
+  item(x + 12, r2, (a, b) => drawIcon(ctx, 'fuego', a, b, 16), 'Incendio');
+  ['dragon', 'oni', 'yokai', 'kappa'].forEach((id, i) => drawIcon(ctx, id, x + 112 + i * 17, r2, 15));
+  ctx.fillStyle = C.boneA(0.85); ctx.fillText('Criaturas', x + 182, r2 + 1);
+  item(x + 252, r2, (a, b) => { ctx.strokeStyle = 'rgba(200,24,34,0.95)'; ctx.lineWidth = 2.4; ctx.setLineDash([5, 3]); ctx.beginPath(); ctx.moveTo(a - 9, b); ctx.lineTo(a + 9, b); ctx.stroke(); ctx.setLineDash([]); ctx.lineWidth = 1; }, 'Rastro de Kenji');
   ctx.restore();
 }
 
@@ -102,7 +150,7 @@ function paintHouses(ctx, L) {
 function paintChartFrame(ctx, L) {
   ctx.save(); ctx.translate(L.ox, L.oy); ctx.scale(L.s, L.s);
   const x = 600, y = 22, w = 370, h = 150;
-  chartCard(ctx, x, y, w, h, 'Pueblo alcanzado por el ataque', 'Porcentaje del valle · 22:00 a 23:00');
+  chartCard(ctx, x, y, w, h, 'Pueblo alcanzado por el ataque', 'Gráfico de líneas · % del valle');
   for (const m of [0, 15, 30, 45, 60]) { const px = x + 30 + (m / 60) * (w - 60); axisLabel(ctx, hhmm(m), px, y + h - 9); line(ctx, [[px, y + h - 24], [px, y + h - 28]], { alpha: 0.5 }); }
   line(ctx, [[x + 30, y + h - 26], [x + w - 30, y + h - 26]], { alpha: 0.35 });
   line(ctx, [[x + 30, y + 56], [x + w - 30, y + 56]], { alpha: 0.16, dash: [2, 4] });
@@ -114,7 +162,7 @@ function paintChartFrame(ctx, L) {
 function chartPt(m) { const x = 600, y = 22, w = 370, h = 150; return [x + 30 + (m / 60) * (w - 60), y + h - 26 - (nightAt(m, 'reach') / 100) * (h - 82)]; }
 
 function drawNight(ctx, L, S, time) {
-  const { m, heat = 0, trail = 0, dawn = 0 } = S;
+  const { m, heat = 0, trail = 0, dawn = 0, bars = 0 } = S;
   ctx.save(); ctx.translate(L.ox, L.oy); ctx.scale(L.s, L.s);
   // mancha de calor: concentración de criaturas
   if (heat > 0) for (const b of BARRIOS) {
@@ -165,15 +213,57 @@ function drawNight(ctx, L, S, time) {
   }
   // gráfica: el humo del incienso dibuja la línea
   const mm = Math.min(60, m);
-  const lp = []; for (let k = 0; k <= mm + 0.001; k += 0.5) lp.push(chartPt(k));
-  if (lp.length > 1) { line(ctx, lp, { w: 5, color: C.boneA(0.12) }); line(ctx, lp, { w: 2, color: C.boneA(0.9) }); }
-  const hp = chartPt(mm);
-  ctx.fillStyle = C.glow; ctx.beginPath(); ctx.arc(hp[0], hp[1], 4.5, 0, 7); ctx.fill();
-  ctx.fillStyle = '#f1ebe2'; ctx.font = '600 16px "Shippori Mincho B1", serif'; ctx.textAlign = 'center'; ctx.fillText(`${Math.round(nightAt(mm, 'reach'))} %`, hp[0], hp[1] - 12);
+  if (bars < 1) {
+    ctx.save(); ctx.globalAlpha = 1 - bars;
+    const lp = []; for (let k = 0; k <= mm + 0.001; k += 0.5) lp.push(chartPt(k));
+    if (lp.length > 1) { line(ctx, lp, { w: 5, color: C.boneA(0.12) }); line(ctx, lp, { w: 2, color: C.boneA(0.9) }); }
+    const hp = chartPt(mm);
+    ctx.fillStyle = C.glow; ctx.beginPath(); ctx.arc(hp[0], hp[1], 4.5, 0, 7); ctx.fill();
+    ctx.fillStyle = '#f1ebe2'; ctx.font = '600 16px "Shippori Mincho B1", serif'; ctx.textAlign = 'center'; ctx.fillText(`${Math.round(nightAt(mm, 'reach'))} %`, hp[0], hp[1] - 12);
+    ctx.restore();
+  }
+  // leyenda del mapa de calor
+  if (heat > 0 && bars < 1) drawHeatLegend(ctx, heat * (1 - bars));
+  // al amanecer: barras apiladas de criaturas derrotadas y huidas
+  if (bars > 0) drawTally(ctx, bars);
   // el incienso (reloj de la noche)
   drawIncense(ctx, 928, 690, mm, time, dawn);
   // amanecer
   if (dawn > 0) { ctx.fillStyle = `rgba(160,150,140,${0.1 * dawn})`; ctx.fillRect(0, 0, 1000, 720); }
+  ctx.restore();
+}
+
+function drawHeatLegend(ctx, a) {
+  const x = 600, y = 180, w = 370, h = 50;
+  ctx.save(); ctx.globalAlpha = a;
+  ctx.fillStyle = 'rgba(11,8,8,0.84)'; ctx.fillRect(x, y, w, h); ctx.strokeStyle = C.boneA(0.2); ctx.lineWidth = 1; ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
+  ctx.fillStyle = '#efe9e1'; ctx.font = '600 12px "Shippori Mincho B1", serif'; ctx.textAlign = 'left'; ctx.fillText('Mapa de calor', x + 14, y + 20);
+  ctx.fillStyle = C.boneA(0.55); ctx.font = '9.5px "IBM Plex Sans", sans-serif'; ctx.fillText('CRIATURAS POR BARRIO', x + 14, y + 36);
+  const gx = x + 170, gw = 150, g = ctx.createLinearGradient(gx, 0, gx + gw, 0); g.addColorStop(0, C.red(0.12)); g.addColorStop(1, C.red(0.85));
+  ctx.fillStyle = g; ctx.fillRect(gx, y + 15, gw, 9);
+  ctx.fillStyle = C.boneA(0.7); ctx.textAlign = 'center'; ctx.fillText('3', gx, y + 39); ctx.fillText('8', gx + gw, y + 39); ctx.textAlign = 'left'; ctx.fillText('criaturas', gx + gw + 10, y + 23);
+  ctx.restore();
+}
+
+function drawTally(ctx, a) {
+  const x = 600, y = 22, w = 370, h = 222, bx = x + 118, unit = 17.5;
+  const e = a * a * (3 - 2 * a);
+  ctx.save(); ctx.globalAlpha = Math.min(1, a * 2);
+  chartCard(ctx, x, y, w, h, 'Al amanecer: las 30 criaturas', 'Gráfico de barras apiladas · por tipo');
+  const red = cached('tally-red', 230, 22, (g) => brush(g, [[4, 11], [226, 11]], { w: 18, color: '#c8141e', alpha: 0.95, profile: 'even', dry: 0.35, seed: 7, n: 30 }), 2);
+  CRIATURAS.forEach((c, i) => {
+    const ry = y + 76 + i * 32;
+    drawIcon(ctx, c.id, x + 28, ry, 18);
+    ctx.fillStyle = C.boneA(0.9); ctx.font = '12px "Zen Old Mincho", serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillText(c.name, x + 44, ry + 1);
+    const wd = c.defeated * unit * e, wf = (c.count - c.defeated) * unit * e;
+    if (wd > 0) ctx.drawImage(red, 0, 0, Math.max(1, wd / 230 * 460), 44, bx, ry - 9, wd, 18);
+    ctx.strokeStyle = C.boneA(0.6); ctx.lineWidth = 1; ctx.strokeRect(bx + wd + 1.5, ry - 7.5, Math.max(0, wf - 3), 15);
+    ctx.fillStyle = '#f1ebe2'; ctx.font = '600 12px "IBM Plex Sans", sans-serif';
+    if (e > 0.6) { ctx.textAlign = 'center'; ctx.fillText(String(c.defeated), bx + wd / 2, ry + 1); ctx.fillStyle = C.boneA(0.8); ctx.fillText(String(c.count - c.defeated), bx + wd + wf / 2, ry + 1); ctx.textAlign = 'left'; ctx.fillStyle = C.boneA(0.6); ctx.font = '11px "IBM Plex Sans", sans-serif'; ctx.fillText(`${c.count}`, bx + wd + wf + 8, ry + 1); }
+  });
+  const ly = y + h - 22; ctx.textBaseline = 'middle'; ctx.font = '11px "IBM Plex Sans", sans-serif';
+  ctx.fillStyle = '#c8141e'; ctx.fillRect(x + 18, ly - 5, 14, 10); ctx.fillStyle = C.boneA(0.85); ctx.textAlign = 'left'; ctx.fillText('14 derrotadas por Kenji', x + 38, ly);
+  ctx.strokeStyle = C.boneA(0.6); ctx.strokeRect(x + 196.5, ly - 4.5, 13, 9); ctx.fillText('16 huyeron', x + 216, ly);
   ctx.restore();
 }
 
@@ -217,6 +307,7 @@ export function defineValley(stage, { onBarrio }) {
         el.appendChild(btn);
       }
     },
+    update(v, st) { const b = (st.valley && st.valley.bars) || 0; if (v.layers[3]) v.layers[3].c.style.opacity = (1 - b).toFixed(3); },
     dyn(ctx, L, st) { drawNight(ctx, L, st.valley || { m: 0 }, st.time); },
   });
 
@@ -263,7 +354,13 @@ export function defineValley(stage, { onBarrio }) {
         }
         ctx.globalAlpha = 1;
       }
-      if (solid > 0 && colA > 0) { ctx.globalAlpha = solid * colA; ctx.fillStyle = C.boneA(0.85); ctx.font = '15px "Zen Old Mincho", serif'; ctx.textAlign = 'left'; ctx.fillText('Estructuras destruidas en cada barrio', 30, 40); ctx.globalAlpha = 1; }
+      if (solid > 0 && colA > 0) {
+        ctx.globalAlpha = solid * colA; ctx.textAlign = 'right';
+        ctx.fillStyle = 'rgba(11,8,8,0.86)'; ctx.fillRect(612, 658, 376, 54); ctx.strokeStyle = C.boneA(0.2); ctx.lineWidth = 1; ctx.strokeRect(612.5, 658.5, 375, 53);
+        ctx.fillStyle = '#efe9e1'; ctx.font = '600 17px "Shippori Mincho B1", serif'; ctx.fillText('Estructuras destruidas en cada barrio', 974, 682);
+        ctx.fillStyle = C.boneA(0.6); ctx.font = '500 10px "IBM Plex Sans", sans-serif'; ctx.fillText('MAPA DE SÍMBOLOS PROPORCIONALES · ALTURA = % DE CASAS', 974, 701);
+        ctx.globalAlpha = 1;
+      }
       // farolillos: uno por habitante, agrupados por barrio
       if (lan > 0) {
         ctx.globalAlpha = Math.min(1, lan * 2.5);
@@ -282,11 +379,12 @@ export function defineValley(stage, { onBarrio }) {
           });
         });
         ctx.textAlign = 'left'; ctx.fillStyle = C.boneA(0.9); ctx.font = '15px "Zen Old Mincho", serif';
-        ctx.fillText('312 farolillos, uno por cada habitante del valle', 30, 64);
-        ctx.font = '12px "IBM Plex Sans", sans-serif';
-        ctx.fillStyle = '#ff7a72'; ctx.fillText('● 60 siguen encendidos', 30, 92);
-        ctx.fillStyle = '#b84a50'; ctx.fillText('● 68 parpadean · heridos', 210, 92);
-        ctx.fillStyle = C.boneA(0.6); ctx.fillText(`○ ${dead} se apagaron`, 410, 92);
+        ctx.fillText('312 farolillos, uno por cada habitante del valle', 30, 56);
+        ctx.fillStyle = C.boneA(0.55); ctx.font = '500 10px "IBM Plex Sans", sans-serif'; ctx.fillText('GRÁFICO DE UNIDADES · 1 FAROLILLO = 1 HABITANTE', 30, 76);
+        ctx.font = '12px "IBM Plex Sans", sans-serif'; ctx.textBaseline = 'middle';
+        drawIcon(ctx, 'ileso', 38, 100, 16); ctx.fillStyle = '#ff7a72'; ctx.fillText('60 siguen encendidos · ilesos', 52, 101);
+        drawIcon(ctx, 'herido', 268, 100, 16); ctx.fillStyle = '#d0686e'; ctx.fillText('68 parpadean · heridos', 282, 101);
+        drawIcon(ctx, 'muerto', 470, 100, 16); ctx.fillStyle = C.boneA(0.75); ctx.fillText(`${dead} de 184 se apagaron · muertos`, 484, 101); ctx.textBaseline = 'alphabetic';
         ctx.globalAlpha = 1;
       }
       ctx.restore();
