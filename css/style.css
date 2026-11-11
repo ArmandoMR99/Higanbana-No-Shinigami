@@ -287,7 +287,7 @@ body.ch-2 #btn-bestias { display: block; }
   #forge-list { right: 1.6rem; top: 22vh; transform: none; }
 }
 
-.card-body .portrait { display: block; width: 100%; max-height: 150px; object-fit: contain; margin: .6rem 0 -.4rem; filter: drop-shadow(0 6px 18px rgba(0,0,0,.6)); }
+.card-body .portrait { display: block; width: 100%; max-height: 190px; object-fit: contain; margin: .6rem 0 -.4rem; filter: drop-shadow(0 6px 18px rgba(0,0,0,.6)); }
 #card { max-height: 88vh; overflow-y: auto; }
 
 /* ---------- Pantalla de carga ---------- */

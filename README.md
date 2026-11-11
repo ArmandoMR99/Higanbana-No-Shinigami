@@ -50,6 +50,7 @@ El **Códice del valle** (botón en el menú) reúne la estructura narrativa, el
 ## Dirección de arte
 
 - **Tinta y sangre:** todo en grises de tinta sobre papel carbón; solo el rojo del higanbana (y el azul del fuego de los onis) tiene color. Un postproceso de tinta lo aplica al 3D.
+- **Personajes, criaturas y escenarios dibujados con código:** Kenji, sus padres y el ronin se arman sobre un esqueleto por pose (kimono, hakama, mangas, pelo, luz de borde); el dragón de hueso, el oni, el yokai y el kappa tienen anatomía propia; los escenarios suman casas minka, pinos, torii, faroles de piedra, tumbas y cordilleras con textura de pincel.
 - **2D al estilo de la infografía *Kusarigama Radiata*:** trazos de pincel seco, aguadas, marcos finos, adornos rojos en las esquinas y etiquetas con líneas guía. Escenas en capas con paralaje suave.
 - **3D solo para lo esencial:** el lirio de araña (portada y cierre) y la Kusarigama (forja y arma).
 - **Datos como parte de la escena:** el reloj es una varilla de incienso, la destrucción la dibuja su humo, la dona es un ensō, las víctimas son farolillos que se apagan.
@@ -75,7 +76,7 @@ js/ui.js              ema de barrio y ficha de bestia (con anatomía)
 js/icons.js           sistema iconográfico (SVG y lienzo)
 js/codex.js           códice: estructura, íconos, índice de visualizaciones y proceso
 js/audio.js           banda sonora y efectos
-js/two/               escenas 2D: pincel, escenario, valle, escenas, partículas
+js/two/               escenas 2D: pincel, personajes (people), bestias (beasts), escenografía (scenery), valle, escenas, partículas
 js/scenes/            escenas 3D: el lirio y la forja
 js/geo.js, js/ink.js  geometría 3D y postproceso de tinta
 vendor/three/         Three.js r169 (licencia MIT)

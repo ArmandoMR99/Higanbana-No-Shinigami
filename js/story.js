@@ -180,10 +180,10 @@ export const NIGHT = [
 ];
 
 export const CRIATURAS = [
-  { id: 'dragon', name: 'Dragones', kanji: '竜', count: 12, defeated: 2, deaths: 82, how: 'Bajan de las nubes desde las montañas del norte.', look: 'Escamas de hueso bajo un cielo morado. Dos de ellos eran colosales.', anat: [[21, 47, 'Cabeza con ojos rojos'], [13, 30, 'Bigotes como látigos'], [62, 38, 'Escamas de hueso'], [36, 72, 'Garras en las patas'], [86, 56, 'Cola de serpiente']] },
-  { id: 'oni', name: 'Onis', kanji: '鬼', count: 7, defeated: 6, deaths: 42, how: 'Entran por los senderos con antorchas de fuego azul.', look: 'Piel gris, garrotes y fuego azul: el único color frío de la noche.', anat: [[50, 17, 'Cuernos'], [36, 42, 'Antorcha de fuego azul'], [71, 45, 'Garrote'], [50, 70, 'Piel gris']] },
-  { id: 'yokai', name: 'Yokais', kanji: '妖', count: 7, defeated: 4, deaths: 38, how: 'Se mueven entre el humo, sin forma fija.', look: 'Siluetas difusas que nadie supo nombrar.', anat: [[50, 40, 'Ojos rojos'], [44, 22, 'Silueta difusa'], [57, 80, 'Cola de humo, sin pies']] },
-  { id: 'kappa', name: 'Kappas', kanji: '河童', count: 4, defeated: 2, deaths: 22, how: 'Suben por el río hacia Takegawa.', look: 'Caparazón y un plato de agua en la cabeza.', anat: [[73, 42, 'Plato de agua en la cabeza'], [48, 47, 'Caparazón'], [32, 66, 'Patas palmeadas']] },
+  { id: 'dragon', name: 'Dragones', kanji: '竜', count: 12, defeated: 2, deaths: 82, how: 'Bajan de las nubes desde las montañas del norte.', look: 'Escamas de hueso bajo un cielo morado. Dos de ellos eran colosales.', anat: [[16, 40, 'Cabeza con ojos rojos'], [25, 27, 'Cuernos ramificados'], [5, 52, 'Bigotes como látigos'], [50, 44, 'Escamas de hueso'], [62, 74, 'Garras de tres uñas'], [92, 47, 'Cola con aleta de pelo']] },
+  { id: 'oni', name: 'Onis', kanji: '鬼', count: 7, defeated: 6, deaths: 42, how: 'Entran por los senderos con antorchas de fuego azul.', look: 'Piel gris, garrotes y fuego azul: el único color frío de la noche.', anat: [[48, 9, 'Cuernos'], [55, 26, 'Colmillos y ojos amarillos'], [26, 42, 'Antorcha de fuego azul'], [79, 34, 'Kanabō con púas'], [55, 44, 'Cuerpo musculoso'], [55, 66, 'Taparrabos de piel de tigre']] },
+  { id: 'yokai', name: 'Yokais', kanji: '妖', count: 7, defeated: 4, deaths: 38, how: 'Se mueven entre el humo, sin forma fija.', look: 'Siluetas difusas que nadie supo nombrar.', anat: [[55, 25, 'Ojo rojo entre el pelo'], [47, 40, 'Melena negra'], [80, 55, 'Manos colgantes'], [20, 35, 'Fuegos fatuos'], [52, 86, 'Sin pies: se deshace en humo']] },
+  { id: 'kappa', name: 'Kappas', kanji: '河童', count: 4, defeated: 2, deaths: 22, how: 'Suben por el río hacia Takegawa.', look: 'Pico, caparazón y un plato de agua en la cabeza: si se derrama, pierde su fuerza.', anat: [[55, 15, 'Plato de agua en la cabeza'], [77, 29, 'Pico'], [34, 51, 'Caparazón'], [77, 63, 'Manos palmeadas'], [46, 91, 'Pies palmeados']] },
 ];
 
 // Tabla C: la marca y la memoria a través de los años.

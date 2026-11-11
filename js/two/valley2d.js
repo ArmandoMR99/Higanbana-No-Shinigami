@@ -1,6 +1,6 @@
 // El valle de Yomigawa en 2D: mapa pintado a pincel, visto desde arriba.
 // Vistas: 'valle' (la noche del ataque, Cap. I y II) y 'recuento' (columnas y farolillos, Cap. III).
-import { C, rng, noise1, paper, mountains, brush, line, wash, house, callout, corners, frame, creature, spline, chartCard, axisLabel, cached } from './brush.js';
+import { C, rng, noise1, fbm, paper, mountains, brush, line, wash, house, callout, corners, frame, creature, spline, chartCard, axisLabel, cached } from './brush.js';
 import { BARRIOS, CRIATURAS, nightAt, hhmm } from '../story.js';
 import { drawIcon } from '../icons.js';
 import { JAPAN, JAPAN_PATH } from './japan.js';
@@ -61,13 +61,17 @@ function paintMap(ctx, L) {
     for (let x = -20; x <= 1020; x += 40) pts.push([x, y0 + Math.sin(x * 0.006 + k) * 22 + (N(x * 0.01 + k * 3) - 0.5) * 30]);
     brush(ctx, pts, { w: 1.2, alpha: 0.12, dry: 0.9, profile: 'even', seed: 20 + k, n: 60 });
   }
+  // relieve sombreado (luz desde el noroeste)
+  ctx.drawImage(relief(), 0, 0, 1000, 720);
+  // arrozales inundados entre los barrios
+  for (const [px, py, rot, n, m] of [[300, 330, 0.25, 5, 4], [560, 250, 0.1, 4, 3], [540, 470, -0.15, 5, 4], [350, 560, 0.3, 4, 3], [780, 560, -0.2, 4, 4], [850, 420, 0.15, 3, 4], [190, 280, -0.1, 3, 3]]) paddies(ctx, px, py, rot, n, m);
   // montañas del norte (tres planos, la del fondo más tenue)
   mountains(ctx, { x0: -20, x1: 1020, base: 120, amp: 70, color: 'rgba(195,191,185,0.10)', fade: 90, seed: 31, freq: 0.004, rim: 0.25 });
   mountains(ctx, { x0: -20, x1: 1020, base: 150, amp: 85, color: 'rgba(195,191,185,0.16)', fade: 110, seed: 32, freq: 0.006, rim: 0.4 });
   mountains(ctx, { x0: -20, x1: 1020, base: 185, amp: 60, color: 'rgba(195,191,185,0.13)', fade: 120, seed: 33, freq: 0.009, rim: 0.5 });
   // bosque de Tsukimori y arboledas: manchas de pincel
   const R = rng(8);
-  const grove = (cx, cy, n, r) => { for (let i = 0; i < n; i++) { const x = cx + (R() - 0.5) * r * 2, y = cy + (R() - 0.5) * r; brush(ctx, [[x, y], [x + 1, y - 6 - R() * 6]], { w: 5 + R() * 4, alpha: 0.28 + R() * 0.2, dry: 0.5, profile: 'start', seed: i + cx | 0, n: 5 }); } };
+  const grove = (cx, cy, n, r) => { const T = []; for (let i = 0; i < n; i++) T.push([cx + (R() - 0.5) * r * 2, cy + (R() - 0.5) * r, 4 + R() * 3.5]); T.sort((a, b) => a[1] - b[1]); for (const [x, y, k] of T) tree(ctx, x, y, k, R()); };
   grove(110, 640, 80, 90); grove(60, 430, 40, 50); grove(520, 300, 26, 40); grove(880, 500, 30, 60); grove(380, 620, 26, 50); grove(860, 680, 20, 60);
   // río: trazo largo de tinta oscura con orillas claras
   const rv = spline(RIVER, 80);
@@ -80,6 +84,10 @@ function paintMap(ctx, L) {
   line(ctx, spline(road, 60), { w: 1, alpha: 0.35, dash: [3, 5] });
   line(ctx, spline([P(BARRIOS[2]), [560, 360], P(BARRIOS[1])], 40), { w: 1, alpha: 0.35, dash: [3, 5] });
   line(ctx, spline([P(BARRIOS[2]), [520, 520], P(BARRIOS[4])], 40), { w: 1, alpha: 0.35, dash: [3, 5] });
+  // puentes donde los caminos cruzan el río
+  for (const [bx, by, a] of [[700, 352, 0.15], [655, 585, -0.1]]) { ctx.save(); ctx.translate(bx, by); ctx.rotate(a); ctx.fillStyle = '#2a221f'; ctx.fillRect(-26, -4, 52, 8); ctx.strokeStyle = C.boneA(0.7); ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(-26, -4); ctx.quadraticCurveTo(0, -9, 26, -4); ctx.moveTo(-26, 4); ctx.quadraticCurveTo(0, -1, 26, 4); ctx.stroke(); for (let k = -20; k <= 20; k += 8) { ctx.beginPath(); ctx.moveTo(k, -5); ctx.lineTo(k, 3); ctx.stroke(); } ctx.restore(); }
+  // el templo de Hikarizaka, en lo alto de la cuesta
+  { const [tx, ty] = [470, 372]; ctx.save(); ctx.fillStyle = '#1d1715'; ctx.fillRect(tx - 14, ty - 8, 28, 10); ctx.beginPath(); ctx.moveTo(tx - 22, ty - 6); ctx.quadraticCurveTo(tx - 10, ty - 10, tx - 8, ty - 20); ctx.lineTo(tx + 8, ty - 20); ctx.quadraticCurveTo(tx + 10, ty - 10, tx + 22, ty - 6); ctx.closePath(); ctx.fill(); ctx.strokeStyle = C.boneA(0.75); ctx.lineWidth = 0.9; ctx.stroke(); ctx.strokeStyle = '#b3121b'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(tx - 34, ty + 14); ctx.lineTo(tx - 34, ty); ctx.moveTo(tx - 24, ty + 14); ctx.lineTo(tx - 24, ty); ctx.moveTo(tx - 38, ty); ctx.lineTo(tx - 20, ty); ctx.moveTo(tx - 37, ty + 4); ctx.lineTo(tx - 21, ty + 4); ctx.stroke(); ctx.restore(); }
   ctx.restore();
   // título y rosa de los vientos
   ctx.fillStyle = C.boneA(0.75); ctx.font = '700 22px "Shippori Mincho B1", serif'; ctx.textAlign = 'left';
@@ -96,6 +104,44 @@ function paintMap(ctx, L) {
   paintInset(ctx); paintLegend(ctx);
   corners(ctx, 1000, 720, { size: 70, color: 'rgba(154,31,40,0.5)' });
   ctx.restore();
+}
+
+// --- piezas del mapa ---
+let reliefCv = null;
+function relief() { // mapa de sombras del terreno, una vez
+  if (reliefCv) return reliefCv;
+  const W = 250, H = 180, c = document.createElement('canvas'); c.width = W; c.height = H; const g = c.getContext('2d'); const d = g.createImageData(W, H);
+  const N = noise1(77), N2 = noise1(78);
+  const E = (x, y) => { const X = x * 4, Y = y * 4; const mtn = Math.pow(Math.max(0, (270 - Y) / 270), 1.4) * 1.4; const n = fbm(N, X * 0.006 + Y * 0.0037, 5) * 0.5 + fbm(N2, Y * 0.006 - X * 0.002, 4) * 0.35; let rv = 1e9; for (const [rx, ry] of RIVER) rv = Math.min(rv, Math.hypot(rx - X, ry - Y)); const val = -Math.max(0, 1 - rv / 120) * 0.25; return mtn + n * (0.4 + mtn) + val; };
+  for (let y = 1; y < H - 1; y++) for (let x = 1; x < W - 1; x++) {
+    const dx = E(x + 1, y) - E(x - 1, y), dy = E(x, y + 1) - E(x, y - 1); const sh = (-dx * 0.7 - dy * 0.7) * 6;
+    const i = (y * W + x) * 4; if (sh > 0) { d.data[i] = 225; d.data[i + 1] = 218; d.data[i + 2] = 208; d.data[i + 3] = Math.min(38, sh * 120); } else { d.data[i] = d.data[i + 1] = d.data[i + 2] = 0; d.data[i + 3] = Math.min(90, -sh * 200); }
+  }
+  g.putImageData(d, 0, 0);
+  return (reliefCv = c);
+}
+function paddies(ctx, x, y, rot, n, m) {
+  ctx.save(); ctx.translate(x, y); ctx.rotate(rot);
+  const cw = 17, ch = 11, R = rng(x | 0);
+  for (let i = 0; i < n; i++) for (let j = 0; j < m; j++) { const px = (i - n / 2) * cw + (j % 2) * 3, py = (j - m / 2) * ch; ctx.fillStyle = `rgba(195,191,185,${0.03 + R() * 0.04})`; ctx.fillRect(px, py, cw - 2, ch - 2); ctx.strokeStyle = C.boneA(0.16); ctx.lineWidth = 0.6; ctx.strokeRect(px, py, cw - 2, ch - 2); if (R() < 0.4) { ctx.strokeStyle = C.boneA(0.1); ctx.beginPath(); ctx.moveTo(px + 3, py + 3 + R() * 4); ctx.lineTo(px + cw - 6, py + 3 + R() * 4); ctx.stroke(); } }
+  ctx.restore();
+}
+function tree(ctx, x, y, k, r) { // árbol visto en vista de pájaro: copa con luz al noroeste y sombra
+  ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.beginPath(); ctx.ellipse(x + k * 0.5, y + k * 0.4, k, k * 0.6, 0, 0, 7); ctx.fill();
+  ctx.fillStyle = r < 0.5 ? '#0d0b0a' : '#141110'; ctx.beginPath(); for (let a = 0; a < 7; a += 0.7) { const rr = k * (0.8 + 0.25 * Math.sin(a * 3 + r * 9)); ctx.lineTo(x + Math.cos(a) * rr, y - k * 0.4 + Math.sin(a) * rr * 0.85); } ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = C.boneA(0.4); ctx.lineWidth = 0.7; ctx.beginPath(); ctx.arc(x - k * 0.15, y - k * 0.55, k * 0.7, Math.PI * 1.05, Math.PI * 1.7); ctx.stroke();
+}
+function mapHouse(ctx, x, y, w, seed) { // casa en vista de tres cuartos para el mapa
+  ctx.save();
+  ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.beginPath(); ctx.ellipse(x + w * 0.1, y + 1, w * 0.5, w * 0.12, 0, 0, 7); ctx.fill();
+  ctx.fillStyle = '#16110f'; ctx.fillRect(x - w * 0.36, y - w * 0.28, w * 0.72, w * 0.28);
+  ctx.fillStyle = 'rgba(200,192,180,0.14)'; ctx.fillRect(x - w * 0.3, y - w * 0.22, w * 0.18, w * 0.16); ctx.fillRect(x + w * 0.04, y - w * 0.22, w * 0.18, w * 0.16);
+  const roof = new Path2D(); roof.moveTo(x - w * 0.48, y - w * 0.24); roof.lineTo(x - w * 0.22, y - w * 0.64); roof.lineTo(x + w * 0.22, y - w * 0.64); roof.lineTo(x + w * 0.48, y - w * 0.24); roof.closePath();
+  ctx.fillStyle = '#6a5f58'; ctx.fill(roof);
+  ctx.save(); ctx.clip(roof); ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillRect(x + w * 0.02, y - w * 0.7, w * 0.6, w * 0.5); ctx.strokeStyle = 'rgba(20,14,12,0.35)'; ctx.lineWidth = 0.5; for (let k = -4; k <= 4; k++) { ctx.beginPath(); ctx.moveTo(x + k * w * 0.05, y - w * 0.64); ctx.lineTo(x + k * w * 0.11, y - w * 0.24); ctx.stroke(); } ctx.restore();
+  ctx.strokeStyle = C.boneA(0.75); ctx.lineWidth = Math.max(0.7, w * 0.05); ctx.beginPath(); ctx.moveTo(x - w * 0.48, y - w * 0.24); ctx.lineTo(x - w * 0.22, y - w * 0.64); ctx.lineTo(x + w * 0.22, y - w * 0.64); ctx.stroke();
+  ctx.strokeStyle = 'rgba(0,0,0,0.9)'; ctx.lineWidth = Math.max(1, w * 0.07); ctx.beginPath(); ctx.moveTo(x - w * 0.22, y - w * 0.65); ctx.lineTo(x + w * 0.22, y - w * 0.65); ctx.stroke();
+  ctx.restore(); void seed;
 }
 
 // recuadro de ubicación: Japón y el valle
@@ -138,7 +184,7 @@ function paintLegend(ctx) {
 
 function paintHouses(ctx, L) {
   ctx.save(); ctx.translate(L.ox, L.oy); ctx.scale(L.s, L.s);
-  for (const h of M.houses) house(ctx, h.x, h.y, h.w);
+  for (const h of M.houses) mapHouse(ctx, h.x, h.y, h.w, h.x * 7 + h.y | 0);
   // etiquetas con líneas guía
   for (const b of BARRIOS) {
     const [x, y] = P(b), [lx, ly, al] = LABEL[b.id];

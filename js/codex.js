@@ -53,22 +53,22 @@ const VIS = [
 ];
 
 const PROCESS = [
-  { date: '7 ago 2026', stage: 'Historia · versión 1', text: 'Primer relato de Kenji (unas 1.500 palabras): la flor, la marca, el ronin, el ataque y la Kusarigama.', img: 'assets/proceso/historia-v1.jpg' },
-  { date: '18 ago 2026', stage: 'Historia · versión 2', text: 'Versión más breve y directa (unas 800 palabras) para probar el ritmo de la narración. La versión final retoma lo mejor de ambas y supera las 2.000 palabras.', img: 'assets/proceso/historia-v2.jpg' },
-  { date: 'sep 2026', stage: 'Infografía «Kusarigama Radiata»', text: 'Primera imagen explicativa del arma: piezas, materiales y funciones. De aquí sale el estilo de tinta y rojo.', img: 'assets/proceso/kusarigama-radiata.jpg' },
-  { date: '20 sep 2026', stage: 'Prototipo interactivo (p5.js)', text: 'Experimento con seguimiento de manos: línea de tiempo con pinza, fichas de los cinco barrios, Modo Bestias y gráficas de destrucción.', img: 'assets/proceso/programa-p5.jpg', link: ['Ver el programa en p5.js', 'https://editor.p5js.org/ArmandoMR99/full/vwsmLIG8w'] },
-  { date: '14 oct 2026', stage: 'Planeación del sitio', text: 'Arquitectura de información (menú y tres pantallas) y bocetos a mano de cada pantalla.', img: 'assets/proceso/planeacion.jpg' },
-  { date: '28 oct 2026', stage: 'Boceto web', text: 'Portada, menú de capítulos al estilo de un videojuego, lectura por pasajes y primeras escenas 3D.', img: 'assets/proceso/boceto.jpg' },
-  { date: '8 nov 2026', stage: 'Etapa 2 · 2D y 3D', text: 'Decisión clave: el 3D solo para el lirio y la Kusarigama; el resto, ilustración 2D al estilo de la infografía. Música generada con código.', img: 'assets/proceso/etapa2.jpg' },
-  { date: '9 nov 2026', stage: 'Pulido', text: 'Navegación por pasos, lirio botánico, bloom, banda sonora japonesa, pantalla de carga y calidad adaptativa.', img: 'assets/screens/03-valle.jpg' },
-  { date: '11 nov 2026', stage: 'Versión final', text: 'Sistema iconográfico, esquema de relaciones, mapas con leyenda y ubicación, barras apiladas, imágenes explicativas e instrumentos grabados.', img: 'assets/proceso/final.jpg' },
+  { date: '7 ago 2026', stage: 'Historia · versión 1', text: 'Aquí arrancó todo. Escribí el primer relato de Kenji (unas 1.500 palabras) con lo esencial: la flor, la marca, el ronin, el ataque y la Kusarigama.', img: 'assets/proceso/historia-v1.jpg' },
+  { date: '18 ago 2026', stage: 'Historia · versión 2', text: 'Probé una versión más corta y directa, de unas 800 palabras, para ver cómo se sentía el ritmo. Al final me quedé con lo mejor de las dos, y la versión de la web pasa de 2.000 palabras.', img: 'assets/proceso/historia-v2.jpg' },
+  { date: 'sep 2026', stage: 'Infografía «Kusarigama Radiata»', text: 'Mi primera imagen explicativa del arma, con sus piezas, materiales y funciones. De ahí salió el estilo de tinta y rojo que terminó definiendo todo el proyecto.', img: 'assets/proceso/kusarigama-radiata.jpg' },
+  { date: '20 sep 2026', stage: 'Prototipo interactivo (p5.js)', text: 'Mi primer experimento interactivo: se controlaba con las manos frente a la cámara. Tenía una línea de tiempo que se movía haciendo pinza, fichas de los cinco barrios, un Modo Bestias y gráficas de destrucción.', img: 'assets/proceso/programa-p5.jpg', link: ['Ver el programa en p5.js', 'https://editor.p5js.org/ArmandoMR99/full/vwsmLIG8w'] },
+  { date: '14 oct 2026', stage: 'Planeación del sitio', text: 'Me senté a dibujar a mano la arquitectura de información (un menú y tres pantallas) y los bocetos de cada pantalla. Esto fue el mapa para todo lo que vino después.', img: 'assets/proceso/planeacion.jpg' },
+  { date: '28 oct 2026', stage: 'Boceto web', text: 'La primera versión en el navegador: portada, un menú de capítulos inspirado en los videojuegos, lectura por pasajes y casi todo en 3D.', img: 'assets/proceso/boceto.jpg' },
+  { date: '8 nov 2026', stage: 'Etapa 2 · 2D y 3D', text: 'Me di cuenta de que tanto 3D se veía raro, así que lo dejé solo para el lirio y la Kusarigama, y todo lo demás lo pasé a ilustración 2D al estilo de mi infografía. También entró la música.', img: 'assets/proceso/etapa2.jpg' },
+  { date: '9 nov 2026', stage: 'Pulido', text: 'Cambié el desplazamiento de la página por una navegación por pasos (se siente mucho más fluida), mejoré el lirio y el arma, y le puse una banda sonora japonesa, pantalla de carga y calidad adaptativa.', img: 'assets/proceso/pulido.jpg' },
+  { date: '11 nov 2026', stage: 'Versión final', text: 'La recta final: el sistema de íconos, el esquema de relaciones, los mapas con leyenda y ubicación, las barras apiladas, las fichas explicativas y personajes, criaturas y escenarios redibujados con mucho más detalle.', img: 'assets/proceso/final.jpg' },
 ];
 
 const DECISIONS = [
-  ['El 3D, solo para lo esencial', 'El lirio y la Kusarigama son los dos objetos que cambian la historia; todo lo demás se dibuja en 2D.'],
-  ['Los datos viven dentro de la escena', 'El reloj es una varilla de incienso, las barras nacen del humo y cada habitante es un farolillo.'],
-  ['Tinta y sangre', 'Grises de tinta sobre papel oscuro; el rojo del higanbana marca lo importante y el azul, el fuego de los onis.'],
-  ['Lectura por pasos', 'Cada paso muestra un dato nuevo: la información se dosifica al ritmo del relato.'],
+  ['El 3D, solo para lo esencial', 'El lirio y la Kusarigama son los dos objetos que le cambian la vida a Kenji, así que son los únicos en 3D. Lo demás lo dibujé en 2D.'],
+  ['Los datos viven dentro de la escena', 'No quería gráficas que aparecieran de la nada: el reloj es una varilla de incienso, las barras salen del humo y cada habitante es un farolillo.'],
+  ['Tinta y sangre', 'Todo va en grises de tinta sobre papel oscuro. El rojo del higanbana marca lo importante y el azul aparece solo en el fuego de los onis.'],
+  ['Lectura por pasos', 'Cada vez que avanzas aparece algo nuevo, para que la información llegue de a poquito y al ritmo de la historia.'],
 ];
 
 function structureHTML() {
@@ -81,7 +81,7 @@ function structureHTML() {
     </div>${i < 2 ? `<div class="cx-link"><i></i><span>${LINKS[i]}</span></div>` : ''}`).join('');
   const night = NIGHT_STEPS.map(([h, ic, t]) => `<li>${svgIcon(ic, { size: 18, title: false })}<b>${h}</b><span>${t}</span></li>`).join('');
   return `
-    <p class="cx-lead">La historia se divide en tres actos. Cada contenedor es un capítulo; las flechas indican el tiempo que pasa entre uno y otro.</p>
+    <p class="cx-lead">Así está armada la historia: tres actos, uno por capítulo. Cada caja es un capítulo y las flechas te dicen cuánto tiempo pasa entre uno y otro.</p>
     <div class="cx-acts">${acts}</div>
     <h3 class="cx-h3">Cronología de la noche del ataque <small>esquema de secuencia · 22:00 a 23:00</small></h3>
     <ol class="cx-night">${night}</ol>
@@ -100,13 +100,13 @@ function structureHTML() {
 
 function iconsHTML() {
   return `
-    <p class="cx-lead">Un solo sistema para todo el sitio: cuadrícula de 24 × 24, trazo de 1,6 y puntas redondas. La forma va en color hueso; el acento, en rojo higanbana (en azul solo el fuego de los onis). Los mismos íconos aparecen en mapas, fichas, gráficas y esquemas.</p>
+    <p class="cx-lead">Diseñé todos los íconos con las mismas reglas: una cuadrícula de 24 × 24, trazo de 1,6 y puntas redondas. La forma va en color hueso y el detalle en rojo higanbana (el azul solo lo uso para el fuego de los onis). Son los mismos en los mapas, las fichas, las gráficas y los esquemas.</p>
     ${ICON_GROUPS.map((g) => `<h3 class="cx-h3">${g.name}</h3><div class="cx-icons">${g.items.map((id) => `<div>${svgIcon(id, { size: 34 })}<b>${ICONS[id].name}</b><span>${ICONS[id].note}</span></div>`).join('')}</div>`).join('')}`;
 }
 
 function visHTML() {
   return `
-    <p class="cx-lead">Las cinco herramientas de la infografía y dónde aparece cada una. Toca «ver» para ir directo al pasaje.</p>
+    <p class="cx-lead">Aquí están las cinco herramientas de la infografía y en qué parte de la historia aparece cada una. Dale a «ver» y te llevo directo a ese pasaje.</p>
     ${VIS.map((g) => `<h3 class="cx-h3">${svgIcon(g.icon, { size: 20, title: false })} ${g.type}</h3>
       <div class="cx-vis">${g.items.map(([kind, title, desc, ch, key, step]) => `
         <div class="cx-vis-i"><span class="cx-kind">${kind}</span><b>${title}</b><span>${desc}</span>
@@ -115,13 +115,13 @@ function visHTML() {
 
 function processHTML() {
   return `
-    <p class="cx-lead">Bitácora del proyecto: de la primera versión de la historia al sitio publicado. Las fechas vienen de los documentos y del historial de versiones en GitHub.</p>
+    <p class="cx-lead">Este es el camino que recorrí, desde la primera versión de la historia hasta la web que estás viendo. Las fechas salen de mis documentos y del historial de versiones en GitHub. Toca cualquier imagen para verla en grande.</p>
     <ol class="cx-proc">${PROCESS.map((p) => `
       <li><div class="cx-date">${p.date}</div><div class="cx-proc-b"><b>${p.stage}</b><span>${p.text}</span>${p.link ? `<a href="${p.link[1]}" target="_blank" rel="noopener">${p.link[0]} ↗</a>` : ''}</div>
       <a class="cx-shot" href="${p.img}" target="_blank" rel="noopener" title="Ver en grande"><img src="${p.img}" alt="${p.stage}" loading="lazy"></a></li>`).join('')}</ol>
-    <h3 class="cx-h3">Decisiones de diseño</h3>
+    <h3 class="cx-h3">Decisiones que tomé en el camino</h3>
     <div class="cx-dec">${DECISIONS.map(([t, d]) => `<div><b>${t}</b><span>${d}</span></div>`).join('')}</div>
-    <p class="cx-foot">Código abierto: <a href="https://github.com/ArmandoMR99/Higanbana-No-Shinigami" target="_blank" rel="noopener">github.com/ArmandoMR99/Higanbana-No-Shinigami ↗</a></p>`;
+    <p class="cx-foot">Si te da curiosidad el código, está todo aquí: <a href="https://github.com/ArmandoMR99/Higanbana-No-Shinigami" target="_blank" rel="noopener">github.com/ArmandoMR99/Higanbana-No-Shinigami ↗</a></p>`;
 }
 
 const TABS = [['estructura', 'Estructura', structureHTML], ['iconos', 'Íconos', iconsHTML], ['visualizaciones', 'Visualizaciones', visHTML], ['proceso', 'Proceso', processHTML]];

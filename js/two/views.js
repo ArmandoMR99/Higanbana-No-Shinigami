@@ -3,6 +3,8 @@
 import { C, rng, paper, mountains, brush, line, wash, bamboo, lily, figure, figurePoint, house, callout, frame, creature, creatureSprite, spline, canvas, cached, stamp, chartCard, axisLabel, weaponAt, lilySprite } from './brush.js';
 import { CRIATURAS, VIAJE, MARCA } from '../story.js';
 import { drawIcon } from '../icons.js';
+import { range, mistBand, pine, minka, ruin, torii, lantern, grave, bale, reeds, lilyField, moon, groundTex, rays, smoke } from './scenery.js';
+import { drawBeast, BEAST_BOX, beastSilhouette } from './beasts.js';
 
 const art = (ctx, L, fn) => { ctx.save(); ctx.translate(L.ox, L.oy); ctx.scale(L.s, L.s); fn(ctx); ctx.restore(); };
 const ramp = (x, a, b) => Math.max(0, Math.min(1, (x - a) / (b - a)));
@@ -12,6 +14,41 @@ const ground = (c, y, a = 0.1, seed = 1) => { const g = c.createLinearGradient(0
 // niebla que se desplaza (barata: dos degradados)
 const mist = (ctx, L, y, a, time, speed = 12) => { for (let k = 0; k < 2; k++) { const x = ((time * speed * (k ? 0.7 : 1) + k * 600) % (L.w + 800)) - 400; const g = ctx.createRadialGradient(x, L.Y(y), 0, x, L.Y(y), 380 * L.s); g.addColorStop(0, `rgba(170,162,155,${a})`); g.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = g; ctx.fillRect(x - 400 * L.s, L.Y(y) - 200 * L.s, 800 * L.s, 400 * L.s); } };
 
+// fila de casas en llamas (siluetas) y fardos de arroz: se pintan una vez
+const burnRow = () => cached('almacen-burn', 1000, 720, (c) => {
+  for (const [x, w] of [[120, 170], [330, 150], [520, 190], [760, 170], [940, 160]]) { minka(c, x, 560, w, { tone: '#050303', rim: 0.25, seed: x }); c.fillStyle = 'rgba(5,3,3,0.9)'; c.fillRect(x - w / 2 - 20, 500, w + 40, 80); }
+  const R = rng(31); c.filter = 'blur(3px)'; for (let k = 0; k < 26; k++) { const x = R() * 1000, h = 40 + R() * 90; c.fillStyle = `rgba(225,${36 + R() * 40 | 0},40,${0.12 + R() * 0.18})`; c.beginPath(); c.moveTo(x - 14, 470); c.quadraticCurveTo(x - 8, 470 - h * 0.6, x, 470 - h); c.quadraticCurveTo(x + 10, 470 - h * 0.5, x + 14, 470); c.fill(); } c.filter = 'none';
+}, 1);
+const balesFg = () => cached('almacen-bales', 1000, 720, (c) => { for (const [x, y, r] of [[80, 690, 46], [200, 700, 44], [130, 620, 44], [920, 700, 46]]) bale(c, x, y, r, { seed: x, rim: 0.12 }); c.globalCompositeOperation = 'source-atop'; c.fillStyle = 'rgba(0,0,0,0.55)'; c.fillRect(0, 0, 1000, 720); }, 1);
+
+// kitsune sentada (zorro blanco con marcas rojas), tengu alado y bakeneko de dos colas
+function fox(c, x, y, k = 1) {
+  c.save(); c.translate(x, y); c.scale(k, k);
+  c.fillStyle = '#e6dfd3'; c.beginPath(); c.moveTo(-14, 0); c.quadraticCurveTo(-20, -24, -8, -38); c.lineTo(-4, -50); c.lineTo(0, -42); c.lineTo(6, -52); c.lineTo(8, -40); c.quadraticCurveTo(18, -34, 16, -22); c.quadraticCurveTo(12, -10, 14, 0); c.closePath(); c.fill();
+  c.beginPath(); c.moveTo(12, -2); c.bezierCurveTo(40, 0, 44, -36, 26, -46); c.bezierCurveTo(34, -30, 28, -10, 10, -10); c.fill(); // cola
+  c.strokeStyle = 'rgba(8,6,6,0.9)'; c.lineWidth = 1; c.stroke();
+  c.fillStyle = '#c0202c'; c.beginPath(); c.moveTo(-2, -38); c.lineTo(2, -32); c.lineTo(6, -38); c.fill(); c.beginPath(); c.moveTo(26, -46); c.quadraticCurveTo(32, -40, 30, -32); c.quadraticCurveTo(28, -40, 22, -42); c.fill();
+  c.fillStyle = '#100'; c.beginPath(); c.moveTo(-6, -36); c.lineTo(-1, -35); c.lineTo(-6, -34); c.fill(); c.beginPath(); c.arc(-15, -32, 1.4, 0, 7); c.fill();
+  c.beginPath(); c.moveTo(-8, -38); c.quadraticCurveTo(-16, -36, -18, -32); c.quadraticCurveTo(-12, -30, -6, -30); c.fillStyle = '#e6dfd3'; c.fill(); c.strokeStyle = 'rgba(8,6,6,0.7)'; c.stroke();
+  c.restore();
+}
+function tengu(c, x, y, h) {
+  const s = h / 200; c.save();
+  c.fillStyle = '#0d0a0a'; for (const sd of [-1, 1]) for (let k = 0; k < 7; k++) { const a = -Math.PI / 2 + sd * (0.5 + k * 0.17); c.beginPath(); c.moveTo(x, y - 140 * s); c.quadraticCurveTo(x + Math.cos(a) * 70 * s, y - 140 * s + Math.sin(a) * 50 * s, x + Math.cos(a) * (120 - k * 6) * s, y - 140 * s + Math.sin(a) * (100 - k * 10) * s); c.lineTo(x + Math.cos(a + sd * 0.12) * (100 - k * 6) * s, y - 140 * s + Math.sin(a + sd * 0.12) * (80 - k * 8) * s); c.closePath(); c.fill(); c.strokeStyle = C.boneA(0.25); c.lineWidth = 0.6; c.stroke(); }
+  figure(c, x, y, h, { who: 'father', dir: -1, rim: C.boneA(0.5) });
+  const hx = x - 5 * s * 1.1, hy = y - 176 * s; c.fillStyle = '#b3121b'; c.beginPath(); c.moveTo(hx - 12 * s, hy - 6 * s); c.lineTo(hx - 34 * s, hy - 2 * s); c.lineTo(hx - 12 * s, hy + 2 * s); c.fill();
+  c.restore();
+}
+function cat(c, x, y, k = 1) {
+  c.save(); c.translate(x, y); c.scale(k, k); c.fillStyle = '#0b0808';
+  c.beginPath(); c.ellipse(0, -10, 11, 12, 0, 0, 7); c.fill(); c.beginPath(); c.arc(-4, -26, 8, 0, 7); c.fill();
+  c.beginPath(); c.moveTo(-11, -30); c.lineTo(-10, -40); c.lineTo(-5, -32); c.moveTo(-2, -32); c.lineTo(2, -40); c.lineTo(3, -29); c.fill();
+  for (const sd of [0, 1]) { c.strokeStyle = '#0b0808'; c.lineWidth = 3.2; c.lineCap = 'round'; c.beginPath(); c.moveTo(9, -4); c.bezierCurveTo(22, -6 - sd * 4, 24 + sd * 6, -24 - sd * 6, 16 + sd * 8, -34 - sd * 4); c.stroke(); }
+  c.strokeStyle = C.boneA(0.4); c.lineWidth = 0.6; c.beginPath(); c.arc(-4, -26, 8, -2.6, -0.6); c.stroke();
+  c.fillStyle = '#e0303a'; c.beginPath(); c.ellipse(-8, -27, 1.6, 1, 0, 0, 7); c.ellipse(-1, -27, 1.6, 1, 0, 0, 7); c.fill();
+  c.restore();
+}
+
 export function defineViews(stage, { onBestia }) {
   // ================= Capítulo I =================
   stage.define('bosque', {
@@ -19,7 +56,14 @@ export function defineViews(stage, { onBestia }) {
       bg([640, 320, 720, 'rgba(84,74,70,0.55)']),
       { depth: 0.12, paint: (ctx, L) => { const R = rng(2); for (let i = 0; i < 44; i++) bamboo(ctx, -60 + R() * (L.w + 120), -40, L.h + 40, 4 + R() * 3, { alpha: 0.07, seed: i + 1, leaves: R() < 0.5 }); band(ctx, L, 520, 170, 0.15); } },
       { depth: 0.3, paint: (ctx, L) => { const R = rng(3); for (let i = 0; i < 12; i++) bamboo(ctx, L.ax - 100 + R() * (L.w - L.ax + 180), -60, L.h + 60, 8 + R() * 5, { alpha: 0.2, seed: 40 + i, leaves: R() < 0.7 });
-        art(ctx, L, (c) => { ground(c, 660, 0.09, 5); const p = [[250, 760], [420, 690], [560, 668], [760, 640], [1100, 628]]; brush(c, p, { w: 40, color: 'rgba(195,191,185,0.08)', profile: 'start', dry: 0.7, seed: 6, n: 40 }); figure(c, 470, 676, 104, { pose: 'walk', rim: C.boneA(0.45) }); }); } },
+        art(ctx, L, (c) => { ground(c, 660, 0.09, 5); groundTex(c, -100, 1100, 650, 70, { seed: 5, a: 0.1, stones: 14 });
+          const p = [[250, 760], [420, 690], [560, 668], [760, 640], [1100, 628]]; brush(c, p, { w: 40, color: 'rgba(195,191,185,0.08)', profile: 'start', dry: 0.7, seed: 6, n: 40 });
+          // sendero de piedras, farol de piedra y helechos
+          const R2 = rng(8); spline(p, 14).forEach((q, i) => { if (i % 2) return; const r = 9 - i * 0.25; c.fillStyle = '#0f0c0b'; c.beginPath(); c.ellipse(q[0] + (R2() - 0.5) * 10, q[1] + 2, r * 1.6, r * 0.55, 0, 0, 7); c.fill(); c.strokeStyle = C.boneA(0.22); c.lineWidth = 0.7; c.beginPath(); c.ellipse(q[0], q[1] + 2, r * 1.6, r * 0.55, 0, Math.PI * 1.1, Math.PI * 1.9); c.stroke(); });
+          lantern(c, 640, 664, 70, { rim: 0.4 }); grave(c, 700, 652, 30, { seed: 4 }); grave(c, 724, 650, 24, { seed: 6 });
+          lilyField(c, 740, 900, 610, 650, { seed: 4, n: 14, size: 3.2 });
+          reeds(c, 150, 420, 720, 46, { seed: 3, n: 40, alpha: 0.35 }); reeds(c, 600, 1000, 700, 40, { seed: 4, n: 40, alpha: 0.28 });
+          figure(c, 470, 676, 110, { pose: 'walk', rim: C.boneA(0.45) }); }); } },
       { depth: 0.75, paint: (ctx, L) => { const R = rng(4); for (const x of [L.ax - 40, L.ax + 70, L.w - 100, L.w - 20]) bamboo(ctx, x + (R() - 0.5) * 40, -80, L.h + 80, 20 + R() * 8, { color: '#060505', alpha: 0.95, seed: x | 0, leaves: true }); } },
     ],
     dyn(ctx, L, st) {
@@ -32,11 +76,12 @@ export function defineViews(stage, { onBestia }) {
     layers: [
       bg([560, 430, 600, 'rgba(96,74,70,0.55)']),
       { depth: 0.12, paint: (ctx, L) => { const R = rng(7); for (let i = 0; i < 28; i++) bamboo(ctx, -60 + R() * (L.w + 120), -40, L.h + 40, 5 + R() * 3, { alpha: 0.08, seed: 70 + i }); band(ctx, L, 600, 180, 0.14); } },
-      { depth: 0.35, paint: (ctx, L) => art(ctx, L, (c) => { const R = rng(9); ground(c, 640, 0.1, 9); for (let i = 0; i < 170; i++) { const x = 100 + R() * 860, y = 620 + R() * 100; brush(c, [[x, y], [x + (R() - 0.5) * 12, y - 12 - R() * 26]], { w: 1.5, alpha: 0.22 + R() * 0.3, profile: 'start', dry: 0.4, seed: i, n: 6 }); }
-        figure(c, 300, 700, 190, { pose: 'kneel', rim: C.boneA(0.5) });
-        const h = figurePoint(300, 700, 190, { pose: 'kneel' }, 'hand');
-        brush(c, [h, [h[0] + 60, h[1] - 20], [h[0] + 150, h[1] - 50]], { w: 9, color: C.ink(0.95), profile: 'start', dry: 0, seed: 3, n: 14 });
-        brush(c, [h, [h[0] + 60, h[1] - 20], [h[0] + 150, h[1] - 50]], { w: 1.2, color: C.boneA(0.4), profile: 'even', dry: 0.5, seed: 4, n: 14 }); }) },
+      { depth: 0.22, paint: (ctx, L) => art(ctx, L, (c) => { // tumbas viejas entre los bambúes: aquí crecen los lirios
+        for (let i = 0; i < 7; i++) grave(c, 40 + i * 34 + (i % 2) * 8, 610 - (i % 3) * 4, 34 + (i % 3) * 8, { seed: i + 11, rim: 0.3 });
+        lilyField(c, 20, 300, 590, 630, { seed: 9, n: 26, size: 2.8 }); lilyField(c, 700, 980, 600, 640, { seed: 12, n: 18, size: 2.6 });
+        mistBand(c, -100, 1100, 600, 30, 0.12, 4); }) },
+      { depth: 0.35, paint: (ctx, L) => art(ctx, L, (c) => { const R = rng(9); ground(c, 640, 0.1, 9); groundTex(c, -100, 1100, 640, 80, { seed: 9, a: 0.08, stones: 10 }); for (let i = 0; i < 170; i++) { const x = 100 + R() * 860, y = 620 + R() * 100; brush(c, [[x, y], [x + (R() - 0.5) * 12, y - 12 - R() * 26]], { w: 1.5, alpha: 0.22 + R() * 0.3, profile: 'start', dry: 0.4, seed: i, n: 6 }); }
+        figure(c, 330, 702, 150, { pose: 'kneel', rim: C.boneA(0.5) }); }) },
       { depth: 0.45, paint: (ctx, L) => art(ctx, L, (c) => lily(c, 580, 470, 2.1, { stem: 110 })) },
     ],
     // línea de tiempo lenta: primero la ficha botánica (imagen explicativa), luego el roce y la flor que desaparece
@@ -75,14 +120,19 @@ export function defineViews(stage, { onBestia }) {
   });
 
   let reflection = null;
-  const RV = { x: 560, y: 250, h: 160 };
+  const RV = { x: 560, y: 250, h: 124 };
   stage.define('rio', {
     layers: [
       bg([600, 240, 700, 'rgba(110,100,94,0.55)']),
-      { depth: 0.2, paint: (ctx, L) => { art(ctx, L, (c) => { mountains(c, { x0: -300, x1: 1300, base: 170, amp: 50, color: 'rgba(195,191,185,0.1)', fade: 60, seed: 61, rim: 0.3 }); }); const y = L.Y(252); const g = ctx.createLinearGradient(0, y, 0, L.h); g.addColorStop(0, '#0c0b0b'); g.addColorStop(1, '#040303'); ctx.fillStyle = g; ctx.fillRect(-80, y, L.w + 160, L.h); const R = rng(12); for (let i = 0; i < 150; i++) { const x = R() * L.w, yy = y + 10 + Math.pow(R(), 1.6) * (L.h - y); line(ctx, [[x, yy], [x + 10 + R() * 40, yy]], { w: 0.8, alpha: 0.1 + R() * 0.15 }); } } },
-      { depth: 0.4, paint: (ctx, L) => art(ctx, L, (c) => { wash(c, 560, 248, 520, 36, 'rgba(195,191,185,0.12)', { seed: 13 }); brush(c, [[-100, 252], [300, 246], [700, 254], [1100, 248]], { w: 3, alpha: 0.55, dry: 0.7, profile: 'even', seed: 14, n: 40 }); for (let i = 0; i < 12; i++) { const x = 200 + i * 60; brush(c, [[x, 250], [x + 3, 230 - (i % 3) * 8]], { w: 2, alpha: 0.4, profile: 'start', dry: 0.4, seed: i, n: 5 }); } figure(c, RV.x, RV.y, RV.h, { dir: -1, pose: 'kneel', mark: true, rim: C.boneA(0.45) }); }) },
+      { depth: 0.2, paint: (ctx, L) => { art(ctx, L, (c) => { moon(c, 820, 70, 22, { a: 0.75 }); range(c, { x0: -300, x1: 1300, base: 150, amp: 70, color: 'rgba(195,191,185,0.08)', fade: 60, seed: 62, rim: 0.2, texture: 0.5 }); range(c, { x0: -300, x1: 1300, base: 200, amp: 50, color: 'rgba(195,191,185,0.12)', fade: 60, seed: 61, rim: 0.35, texture: 0.7 }); mistBand(c, -200, 1200, 220, 22, 0.14, 6); }); const y = L.Y(252); const g = ctx.createLinearGradient(0, y, 0, L.h); g.addColorStop(0, '#0c0b0b'); g.addColorStop(1, '#040303'); ctx.fillStyle = g; ctx.fillRect(-80, y, L.w + 160, L.h); const R = rng(12); for (let i = 0; i < 150; i++) { const x = R() * L.w, yy = y + 10 + Math.pow(R(), 1.6) * (L.h - y); line(ctx, [[x, yy], [x + 10 + R() * 40, yy]], { w: 0.8, alpha: 0.1 + R() * 0.15 }); } } },
+      { depth: 0.4, paint: (ctx, L) => art(ctx, L, (c) => { wash(c, 560, 248, 520, 36, 'rgba(195,191,185,0.12)', { seed: 13 });
+        // la otra orilla: casas y pinos del barrio, y el reflejo de la luna
+        for (const [x, w] of [[90, 46], [150, 38], [210, 44], [860, 42], [920, 36]]) minka(c, x, 246, w, { seed: x, rim: 0.35, lit: x % 3 ? 0.6 : 0 });
+        for (const [x, h] of [[30, 70], [270, 60], [330, 46], [780, 64], [980, 58]]) pine(c, x, 248, h, { seed: x, rim: 0.3 });
+        for (let k = 0; k < 9; k++) { c.fillStyle = `rgba(226,220,210,${0.18 - k * 0.016})`; c.fillRect(820 - 18 + (k % 2) * 6 + Math.sin(k) * 5, 262 + k * 10, 36 - k * 2, 1.6); } brush(c, [[-100, 252], [300, 246], [700, 254], [1100, 248]], { w: 3, alpha: 0.55, dry: 0.7, profile: 'even', seed: 14, n: 40 }); for (let i = 0; i < 12; i++) { const x = 200 + i * 60; brush(c, [[x, 250], [x + 3, 230 - (i % 3) * 8]], { w: 2, alpha: 0.4, profile: 'start', dry: 0.4, seed: i, n: 5 }); } figure(c, RV.x, RV.y, RV.h, { dir: -1, pose: 'kneel', mark: true, rim: C.boneA(0.45) }); }) },
+      { depth: 0.75, paint: (ctx, L) => art(ctx, L, (c) => { reeds(c, -60, 260, 740, 150, { seed: 21, n: 46, dark: true }); reeds(c, 820, 1080, 740, 130, { seed: 22, n: 40, dark: true }); }) },
     ],
-    prepare(v) { const L = v.L; reflection = canvas(140 * L.s, RV.h * 0.75 * L.s); const c = reflection.ctx; c.scale(L.s, L.s); c.translate(70, 0); c.scale(1, -1); figure(c, 0, 0, RV.h, { dir: -1, pose: 'kneel', color: 'rgba(130,122,116,0.55)', rim: null }); },
+    prepare(v) { const L = v.L; reflection = canvas(140 * L.s, RV.h * 0.95 * L.s); const c = reflection.ctx; c.scale(L.s, L.s); c.translate(70, 0); c.scale(1, -1); figure(c, 0, 0, RV.h, { dir: -1, pose: 'kneel', color: 'rgba(130,122,116,0.55)', rim: null }); },
     dyn(ctx, L, st) {
       if (!reflection) return;
       const t = st.key === 'rio' ? st.tp : 1, x0 = L.X(RV.x) - 70 * L.s, y0 = L.Y(RV.y + 4);
@@ -119,9 +169,17 @@ export function defineViews(stage, { onBestia }) {
   stage.define('ronin', {
     layers: [
       bg([560, 470, 780, 'rgba(120,108,100,0.6)']),
-      { depth: 0.15, paint: (ctx, L) => art(ctx, L, (c) => { mountains(c, { x0: -300, x1: 1300, base: 270, amp: 90, color: 'rgba(195,191,185,0.12)', fade: 80, seed: 71, rim: 0.35 }); const R = rng(72); for (let i = 0; i < 9; i++) house(c, -120 + i * 150 + R() * 30, 480 + R() * 20, 110 + R() * 30, { color: C.boneA(0.32), fill: 'rgba(16,12,12,0.92)' }); band(ctx, L, 480, 60, 0.12); }) },
+      { depth: 0.1, paint: (ctx, L) => art(ctx, L, (c) => { range(c, { x0: -300, x1: 1300, base: 230, amp: 110, color: 'rgba(195,191,185,0.09)', fade: 80, seed: 70, rim: 0.25, texture: 0.6 }); range(c, { x0: -300, x1: 1300, base: 300, amp: 80, color: 'rgba(195,191,185,0.13)', fade: 80, seed: 71, rim: 0.35, texture: 0.8 }); mistBand(c, -200, 1200, 330, 30, 0.16, 7); }) },
+      { depth: 0.2, paint: (ctx, L) => art(ctx, L, (c) => { // la calle de Akabana
+        const R = rng(72);
+        for (const [x, w, lit] of [[-60, 170, 0.5], [110, 150, 0], [280, 180, 0.8], [470, 140, 0], [640, 170, 0.6], [820, 150, 0.3], [990, 170, 0]]) minka(c, x + R() * 10, 520, w, { seed: x + 300, lit, rim: 0.42 });
+        for (const [x, h] of [[200, 120], [560, 140], [745, 110], [920, 130]]) pine(c, x, 528, h, { seed: x, rim: 0.4, alpha: 0.95 });
+        // pozo con techo
+        c.fillStyle = '#100c0c'; c.fillRect(590, 540, 46, 22); c.strokeStyle = C.boneA(0.35); c.lineWidth = 0.8; c.strokeRect(590, 540, 46, 22); c.fillRect(592, 500, 3, 40); c.fillRect(631, 500, 3, 40); c.beginPath(); c.moveTo(582, 504); c.lineTo(613, 488); c.lineTo(644, 504); c.closePath(); c.fill(); c.stroke();
+        band(ctx, L, 520, 50, 0.08); }) },
       { depth: 0.35, paint: (ctx, L) => art(ctx, L, (c) => {
-        ground(c, RN.y, 0.11, 74);
+        ground(c, RN.y, 0.11, 74); groundTex(c, -100, 1100, 560, 160, { seed: 74, a: 0.1, stones: 6 });
+        lantern(c, 90, 640, 90, { lit: 0.7 }); lantern(c, 930, 640, 90, { lit: 0.5 });
         figure(c, RN.kx, RN.y, 170, { pose: 'stand', rim: C.boneA(0.5) });
         const m = figurePoint(RN.kx, RN.y, 170, {}, 'mark'); c.fillStyle = C.boneA(0.85); c.fillRect(m[0] - 9, m[1] - 3, 15, 7);
         figure(c, RN.rx, RN.y, 215, { who: 'ronin', dir: -1, rim: C.boneA(0.5) });
@@ -153,25 +211,39 @@ export function defineViews(stage, { onBestia }) {
         // la pared del fondo y la sangre
         const sp = ramp(t, 0.5, 0.62);
         if (sp > 0) { c.save(); c.globalAlpha = sp; const R = rng(9); c.fillStyle = '#8e0d16'; for (let k = 0; k < 30; k++) { const a = R() * 6.28, d = R() * 130 * sp; c.beginPath(); c.ellipse(840 + Math.cos(a) * d * 1.4, 300 + Math.sin(a) * d * 0.6, 3 + R() * 12, 2 + R() * 7, a, 0, 7); c.fill(); } c.restore(); }
+        // al fondo, las casas de Akabana ardiendo
+        c.drawImage(burnRow(), 0, 0, 1000, 720);
         const raise = ramp(t, 0.1, 0.35), hit = ramp(t, 0.35, 0.45);
-        c.save(); c.translate(640, 400); c.rotate(-0.3 - raise * 1.7 + hit * 2.5); c.fillStyle = 'rgba(8,6,6,0.98)'; c.fillRect(-12, -210, 26, 220); c.beginPath(); c.arc(1, -210, 22, 0, 7); c.fill(); c.restore();
-        figure(c, 540, 780, 480, { who: 'oni', color: 'rgba(8,6,6,0.98)', rim: null });
-        const bg2 = c.createRadialGradient(440, 470, 0, 440, 470, 46); bg2.addColorStop(0, 'rgba(190,215,255,1)'); bg2.addColorStop(0.3, C.oni(0.85)); bg2.addColorStop(1, C.oni(0)); c.fillStyle = bg2; c.beginPath(); c.arc(440, 470, 46, 0, 7); c.fill();
+        // el oni a contraluz: silueta detallada con borde de fuego
+        const sil = beastSilhouette('oni', { scale: 3.2, rim: 'rgba(255,120,90,0.55)', noClub: true }), sc = 480 / 160;
+        const ox = 540 - 70 * sc, oy = 780 - 156 * sc;
+        c.drawImage(sil, ox - sil.pad * sc, oy - sil.pad * sc, sil.w * sc, sil.h * sc);
+        // kanabō (garrote con púas) en la mano: se levanta y cae
+        const hx = ox + 102 * sc, hy = oy + 86 * sc;
+        c.save(); c.translate(hx, hy); c.rotate(-0.25 - raise * 1.75 + hit * 2.5); c.fillStyle = 'rgba(8,6,6,0.98)'; c.beginPath(); c.moveTo(-6, 18); c.lineTo(6, 18); c.lineTo(15, -200); c.quadraticCurveTo(0, -222, -15, -200); c.closePath(); c.fill();
+        c.strokeStyle = 'rgba(255,120,90,0.45)'; c.lineWidth = 1.5; c.beginPath(); c.moveTo(-15, -200); c.lineTo(-6, 18); c.stroke(); c.fillStyle = 'rgba(8,6,6,0.98)'; for (let y = -190; y < -40; y += 16) for (const sx of [-1, 1]) { const wdt = 6 + 9 * (1 - (y + 200) / 240); c.beginPath(); c.moveTo(sx * wdt, y); c.lineTo(sx * (wdt + 6), y - 3); c.lineTo(sx * wdt, y - 6); c.fill(); } c.restore();
+        const tx = ox + 29 * sc, ty = oy + 66 * sc;
+        const bg2 = c.createRadialGradient(tx, ty, 0, tx, ty, 60); bg2.addColorStop(0, 'rgba(210,228,255,1)'); bg2.addColorStop(0.25, C.oni(0.85)); bg2.addColorStop(1, C.oni(0)); c.fillStyle = bg2; c.beginPath(); c.arc(tx, ty, 60, 0, 7); c.fill();
+        c.fillStyle = 'rgba(225,235,255,0.9)'; c.beginPath(); c.moveTo(tx - 10, ty + 18); c.quadraticCurveTo(tx - 14 + Math.sin(time * 9) * 3, ty - 14, tx + Math.sin(time * 7) * 4, ty - 40); c.quadraticCurveTo(tx + 6, ty - 8, tx + 12, ty - 14); c.quadraticCurveTo(tx + 14, ty + 6, tx + 8, ty + 18); c.closePath(); c.fill();
         const fall = ramp(t, 0.42, 0.6);
         c.save(); c.translate(790, 770); c.rotate(fall * 1.35); figure(c, 0, 0, 280, { who: 'father', dir: -1, color: 'rgba(10,8,8,0.96)', rim: null }); c.restore();
       });
       // las tablas del almacén, con rendijas
-      const pw = Math.max(110, W / 7), gap = pw * (0.2 + ramp(t, 0, 0.25) * 0.08);
+      const pw = Math.max(110, W / 7), gap = pw * (0.3 + ramp(t, 0, 0.25) * 0.08);
       ctx.fillStyle = 'rgba(5,4,4,0.97)';
       for (let x = -pw / 2; x < W + pw; x += pw) ctx.fillRect(x, 0, pw - gap, H);
       ctx.strokeStyle = 'rgba(195,191,185,0.05)'; ctx.lineWidth = 1;
       for (let x = -pw / 2; x < W + pw; x += pw) for (let k = 1; k < 5; k++) { ctx.beginPath(); ctx.moveTo(x + k * pw / 5, 0); ctx.bezierCurveTo(x + k * pw / 5 + 6, H * 0.3, x + k * pw / 5 - 6, H * 0.6, x + k * pw / 5 + 3, H); ctx.stroke(); }
+      // clavos y vetas de las tablas
+      ctx.fillStyle = 'rgba(195,191,185,0.12)'; for (let x = -pw / 2; x < W + pw; x += pw) for (const yy of [H * 0.12, H * 0.5, H * 0.88]) { ctx.beginPath(); ctx.arc(x + (pw - gap) / 2 - 10, yy, 2, 0, 7); ctx.arc(x + (pw - gap) / 2 + 10, yy, 2, 0, 7); ctx.fill(); }
       const sh = ctx.createLinearGradient(0, 0, W, 0); sh.addColorStop(0, 'rgba(0,0,0,0.9)'); sh.addColorStop(0.42, 'rgba(0,0,0,0.25)'); sh.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = sh; ctx.fillRect(0, 0, W, H);
+      // fardos de arroz en primer plano, dentro del almacén
+      art(ctx, L, (c) => c.drawImage(balesFg(), 0, 0, 1000, 720));
     },
   });
 
   // ================= Capítulo II =================
-  const DK = { x: 470, y: 770, h: 560 };
+  const DK = { x: 470, y: 770, h: 430 };
   const dpose = { pose: 'kneel' };
   const veins = (() => {
     const m = figurePoint(DK.x, DK.y, DK.h, dpose, 'mark'), hd = figurePoint(DK.x, DK.y, DK.h, dpose, 'hand');
@@ -183,6 +255,13 @@ export function defineViews(stage, { onBestia }) {
   stage.define('despertar', {
     layers: [
       bg([560, 420, 640, 'rgba(80,40,40,0.55)']),
+      { depth: 0.14, paint: (ctx, L) => art(ctx, L, (c) => { // dentro del almacén de arroz
+        const R = rng(33);
+        for (let x = -40; x < 1080; x += 56) { c.fillStyle = `rgba(30,22,20,${0.5 + R() * 0.3})`; c.fillRect(x, -40, 52, 820); c.strokeStyle = C.boneA(0.05); c.lineWidth = 1; for (let k = 1; k < 4; k++) { c.beginPath(); c.moveTo(x + k * 13, -40); c.bezierCurveTo(x + k * 13 + 4, 200, x + k * 13 - 4, 500, x + k * 13 + 2, 780); c.stroke(); } }
+        c.fillStyle = '#050303'; c.fillRect(-40, 90, 1100, 22); c.fillRect(-40, 380, 1100, 16);
+        rays(c, 640, 0, 6, 820, 0.5, { a: 0.07, seed: 3, color: '255,120,90' });
+        for (const [x, y, r] of [[60, 700, 50], [170, 712, 48], [110, 630, 48], [80, 560, 46], [860, 710, 50], [960, 690, 46], [905, 626, 48]]) bale(c, x, y, r, { seed: x + y, rim: 0.22 });
+        groundTex(c, -100, 1100, DK.y - 10, 60, { seed: 30, a: 0.12, stones: 0 }); }) },
       { depth: 0.3, paint: (ctx, L) => art(ctx, L, (c) => { ground(c, DK.y - 4, 0.08, 30); figure(c, DK.x, DK.y, DK.h, { pose: 'kneel', lean: -0.08, rim: C.boneA(0.4) }); callout(c, [veins.m[0] + 6, veins.m[1] - 6], [760, 150], 'La marca despierta', { size: 13, sub: 'el fuego baja por el brazo derecho' }); }) },
     ],
     dyn(ctx, L, st) {
@@ -208,13 +287,19 @@ export function defineViews(stage, { onBestia }) {
   stage.define('latido', {
     layers: [
       bg([560, 380, 660, 'rgba(76,52,52,0.5)']),
+      { depth: 0.08, paint: (ctx, L) => art(ctx, L, (c) => { // el valle ardiendo detrás de la gráfica
+        range(c, { x0: -300, x1: 1300, base: 600, amp: 120, color: 'rgba(195,191,185,0.07)', fade: 60, seed: 42, rim: 0.2, texture: 0.5 });
+        const R = rng(43);
+        for (const [x, w] of [[-20, 150], [140, 130], [300, 160], [700, 150], [860, 140], [1010, 150]]) { minka(c, x, 700, w, { seed: x + 7, burn: 1, rim: 0.3 }); const g = c.createRadialGradient(x, 640, 0, x, 640, w); g.addColorStop(0, 'rgba(230,60,40,0.35)'); g.addColorStop(1, 'rgba(200,30,30,0)'); c.fillStyle = g; c.fillRect(x - w, 540, w * 2, 200); smoke(c, x + 10, 600, 300, { a: 0.08, seed: x + 3, w: 26 }); }
+        c.filter = 'blur(2.5px)'; for (let k = 0; k < 40; k++) { const x = R() * 1000, h = 20 + R() * 60; c.fillStyle = `rgba(225,${36 + R() * 40 | 0},40,${0.14 + R() * 0.22})`; c.beginPath(); c.moveTo(x - 9, 650); c.quadraticCurveTo(x - 4, 650 - h * 0.6, x, 650 - h); c.quadraticCurveTo(x + 6, 650 - h * 0.5, x + 9, 650); c.fill(); } c.filter = 'none';
+        const dg = beastSilhouette('dragon', { scale: 1, rim: 'rgba(255,120,90,0.4)' }); c.globalAlpha = 0.85; c.drawImage(dg, 20, 520, 170, 88); c.save(); c.translate(990, 540); c.scale(-1, 1); c.drawImage(dg, 0, 0, 150, 78); c.restore(); c.globalAlpha = 1; }) },
       { depth: 0.2, paint: (ctx, L) => art(ctx, L, (c) => {
         chartCard(c, 110, 90, 860, 420, 'El poder de Kenji', 'Gráfico de líneas · intensidad de 0 a 100 · 22:30 a 23:00');
         line(c, [[PX(30), PY(0)], [PX(60), PY(0)]], { alpha: 0.35 }); line(c, [[PX(30), PY(100)], [PX(60), PY(100)]], { alpha: 0.14, dash: [2, 5] }); line(c, [[PX(30), PY(50)], [PX(60), PY(50)]], { alpha: 0.08, dash: [2, 5] });
         for (const [m, tx] of [[30, '22:30'], [37.5, '22:37'], [45, '22:45'], [52.5, '22:52'], [60, '23:00']]) axisLabel(c, tx, PX(m), PY(0) + 20);
         axisLabel(c, '100', PX(30) - 10, PY(100) + 3, 'right'); axisLabel(c, '50', PX(30) - 10, PY(50) + 3, 'right'); axisLabel(c, '0', PX(30) - 10, PY(0) + 3, 'right');
       }) },
-      { depth: 0.4, paint: (ctx, L) => art(ctx, L, (c) => { ground(c, 712, 0.08, 40); figure(c, 500, 720, 220, { pose: 'walk', mark: true, rim: C.boneA(0.4) }); }) },
+      { depth: 0.4, paint: (ctx, L) => art(ctx, L, (c) => { ground(c, 712, 0.08, 40); groundTex(c, -100, 1100, 712, 30, { seed: 41, stones: 6 }); figure(c, 500, 720, 220, { pose: 'fight', mark: true, rim: C.boneA(0.45) }); }) },
     ],
     dyn(ctx, L, st) {
       const t = st.key === 'latido' ? st.tp : 1;
@@ -272,21 +357,23 @@ export function defineViews(stage, { onBestia }) {
   stage.define('ruinas', {
     layers: [
       bg([640, 250, 720, 'rgba(126,114,106,0.5)']),
-      { depth: 0.15, paint: (ctx, L) => art(ctx, L, (c) => { mountains(c, { x0: -300, x1: 1300, base: 300, amp: 80, color: 'rgba(195,191,185,0.13)', fade: 100, seed: 91, rim: 0.3 }); band(ctx, L, 380, 90, 0.18); }) },
+      { depth: 0.1, paint: (ctx, L) => art(ctx, L, (c) => { // amanecer gris sobre el valle
+        const sun = c.createRadialGradient(700, 300, 0, 700, 300, 320); sun.addColorStop(0, 'rgba(200,170,150,0.22)'); sun.addColorStop(1, 'rgba(0,0,0,0)'); c.fillStyle = sun; c.fillRect(300, 0, 800, 600);
+        range(c, { x0: -300, x1: 1300, base: 260, amp: 120, color: 'rgba(195,191,185,0.09)', fade: 80, seed: 90, rim: 0.25, texture: 0.6 });
+        range(c, { x0: -300, x1: 1300, base: 330, amp: 80, color: 'rgba(195,191,185,0.13)', fade: 100, seed: 91, rim: 0.35, texture: 0.8 }); band(ctx, L, 390, 90, 0.18); mistBand(c, -200, 1200, 400, 34, 0.15, 9); }) },
+      { depth: 0.22, paint: (ctx, L) => art(ctx, L, (c) => { // casas lejanas: algunas en pie, la mayoría en ruinas
+        for (const [x, w, b] of [[60, 90, 1], [150, 80, 0], [880, 90, 1], [960, 76, 1]]) minka(c, x, 470, w, { seed: x, burn: b, rim: 0.28 });
+        for (const [x, h] of [[230, 70], [800, 80]]) pine(c, x, 474, h, { seed: x + 2, rim: 0.3 });
+        for (const x of [100, 330, 520, 700, 900]) smoke(c, x, 470, 380, { a: 0.07, seed: x, w: 22 }); }) },
       { depth: 0.3, paint: (ctx, L) => art(ctx, L, (c) => {
-        const R = rng(92);
-        for (let i = 0; i < 6; i++) {
-          const x = 90 + i * 170 + R() * 40, y = 540 + R() * 20, w = 110 + R() * 50, h = 90 + R() * 40;
-          const post = (x0, h0, lean) => { brush(c, [[x0, y], [x0 + lean, y - h0]], { w: 9, color: '#0b0909', profile: 'even', dry: 0.15, seed: x0 | 0, n: 8 }); brush(c, [[x0 + 3, y], [x0 + lean + 3, y - h0]], { w: 1.2, color: C.boneA(0.3), profile: 'even', dry: 0.6, seed: (x0 | 0) + 1, n: 8 }); };
-          post(x - w / 2, h * (0.6 + R() * 0.4), -4); post(x + w / 2, h * (0.4 + R() * 0.5), 6); if (R() < 0.6) post(x, h * 0.9, 2);
-          brush(c, [[x - w / 2 - 10, y - h * 0.7], [x + w * 0.2, y - h * 0.95 + R() * 30], [x + w / 2 + 20, y - h * 0.3]], { w: 7, color: '#0b0909', profile: 'taper', dry: 0.2, seed: i + 7, n: 12 });
-          c.fillStyle = 'rgba(8,6,6,0.9)'; c.beginPath(); c.ellipse(x, y, w * 0.6, 9, 0, 0, 7); c.fill();
-          for (let k = 0; k < 5; k++) { c.fillStyle = C.glowA(0.6 + R() * 0.4); c.beginPath(); c.arc(x - w / 2 + R() * w, y - 2 - R() * 6, 1.4 + R() * 1.4, 0, 7); c.fill(); }
-        }
+        for (const [x, y, w] of [[110, 552, 170], [300, 540, 150], [520, 556, 190], [740, 546, 160], [930, 556, 170]]) ruin(c, x, y, w, { seed: x, embers: 0.8 });
+        // dragón colosal caído entre las ruinas
+        const dg = beastSilhouette('dragon', { scale: 2, rim: 'rgba(225,215,205,0.35)' }); c.save(); c.translate(820, 640); c.rotate(0.12); c.globalAlpha = 0.95; c.drawImage(dg, -220, -70, 440, 228); c.restore();
+        groundTex(c, -100, 1100, 600, 120, { seed: 93, a: 0.1, stones: 30 });
         ground(c, 690, 0.08, 93);
-        figure(c, 400, 700, 170, { pose: 'kneel', mark: true, rim: C.boneA(0.45) });
+        figure(c, 400, 700, 132, { pose: 'kneel', mark: true, rim: C.boneA(0.45) });
         weaponAt(c, 650, 700, 0.5, 2.7);
-        line(c, spline([figurePoint(400, 700, 170, { pose: 'kneel' }, 'hand'), [520, 700], [620, 690]], 20), { w: 2.4, color: '#c0141c', alpha: 0.85, dash: [5, 4] });
+        line(c, spline([figurePoint(400, 700, 132, { pose: 'kneel' }, 'hand'), [520, 700], [620, 690]], 20), { w: 2.4, color: '#c0141c', alpha: 0.85, dash: [5, 4] });
         callout(c, [640, 640], [800, 470], 'La kusarigama, clavada en el barro', { size: 13, sub: 'unida a la herida de su brazo' });
       }) },
     ],
@@ -296,12 +383,20 @@ export function defineViews(stage, { onBestia }) {
   stage.define('camino', {
     layers: [
       bg([620, 240, 720, 'rgba(126,114,106,0.5)']),
-      { depth: 0.1, paint: (ctx, L) => art(ctx, L, (c) => { mountains(c, { x0: -300, x1: 1300, base: 260, amp: 120, color: 'rgba(195,191,185,0.1)', fade: 80, seed: 101, rim: 0.25 }); }) },
-      { depth: 0.25, paint: (ctx, L) => art(ctx, L, (c) => { mountains(c, { x0: -300, x1: 1300, base: 390, amp: 110, color: 'rgba(195,191,185,0.16)', fade: 120, seed: 102, rim: 0.4 }); band(ctx, L, 430, 80, 0.2); }) },
+      { depth: 0.1, paint: (ctx, L) => art(ctx, L, (c) => { const sun = c.createRadialGradient(640, 330, 0, 640, 330, 300); sun.addColorStop(0, 'rgba(210,180,160,0.2)'); sun.addColorStop(1, 'rgba(0,0,0,0)'); c.fillStyle = sun; c.fillRect(300, 0, 700, 640);
+        range(c, { x0: -300, x1: 1300, base: 260, amp: 120, color: 'rgba(195,191,185,0.1)', fade: 80, seed: 101, rim: 0.25, texture: 0.6 });
+        // el valle allá abajo: columnas de humo que todavía suben
+        for (const x of [380, 470, 560, 690, 770]) smoke(c, x, 400, 240, { a: 0.06, seed: x, w: 14 }); }) },
+      { depth: 0.25, paint: (ctx, L) => art(ctx, L, (c) => { range(c, { x0: -300, x1: 1300, base: 390, amp: 110, color: 'rgba(195,191,185,0.16)', fade: 120, seed: 102, rim: 0.4, texture: 0.9 }); band(ctx, L, 430, 80, 0.2); mistBand(c, -200, 1200, 440, 30, 0.16, 11); }) },
       { depth: 0.5, paint: (ctx, L) => art(ctx, L, (c) => {
         const rd = new Path2D(); rd.moveTo(160, 760); rd.bezierCurveTo(420, 650, 560, 560, 640, 440); rd.lineTo(662, 440); rd.bezierCurveTo(630, 560, 610, 660, 540, 760); rd.closePath();
         const rg = c.createLinearGradient(0, 760, 0, 440); rg.addColorStop(0, 'rgba(195,191,185,0.24)'); rg.addColorStop(1, 'rgba(195,191,185,0)'); c.fillStyle = rg; c.fill(rd);
         const R = rng(104); for (let i = 0; i < 46; i++) { const y = 460 + R() * 300, f = (y - 440) / 320, x = 650 - f * (230 + R() * 260); line(c, [[x, y], [x + 8, y - 1]], { w: 0.8, alpha: 0.25 }); }
+        // pinos, jizō de piedra y faroles junto al camino
+        for (const [x, y, h] of [[80, 740, 300], [300, 600, 150], [760, 560, 170], [930, 720, 320], [420, 500, 90], [720, 470, 70]]) pine(c, x, y, h, { seed: x + y, rim: 0.42 });
+        lantern(c, 420, 690, 70, { rim: 0.45 }); lantern(c, 700, 540, 46, { rim: 0.4 });
+        for (const [x, y] of [[470, 650], [492, 646]]) { c.fillStyle = '#141010'; c.beginPath(); c.ellipse(x, y - 14, 6, 9, 0, 0, 7); c.fill(); c.beginPath(); c.arc(x, y - 27, 5, 0, 7); c.fill(); c.fillStyle = '#8e1a22'; c.fillRect(x - 6, y - 21, 12, 5); c.strokeStyle = C.boneA(0.35); c.lineWidth = 0.6; c.beginPath(); c.arc(x, y - 27, 5, -1.5, 0.6); c.stroke(); }
+        reeds(c, 150, 520, 760, 50, { seed: 105, n: 30, alpha: 0.3 });
         figure(c, 545, 610, 120, { pose: 'walk', dir: 1, mark: true, rim: C.boneA(0.5) });
         weaponAt(c, ...figurePoint(545, 610, 120, { pose: 'walk' }, 'mark'), 0.2, 2.3);
       }) },
@@ -323,14 +418,32 @@ export function defineViews(stage, { onBestia }) {
       wash(c, RW / 2, 360, RW / 2, 260, 'rgba(195,191,185,0.05)', { seed: 5, blobs: 14 });
       c.strokeStyle = C.boneA(0.25); c.lineWidth = 1; c.strokeRect(10, 70, RW - 20, 580); c.strokeStyle = 'rgba(154,31,40,0.45)'; c.strokeRect(18, 78, RW - 36, 564);
       mountains(c, { x0: 0, x1: RW, base: 300, amp: 90, color: 'rgba(195,191,185,0.08)', fade: 120, seed: 111, rim: 0.2, freq: 0.003 });
-      const R = rng(112); for (let i = 0; i < 12; i++) house(c, 120 + R() * 220, 520 + R() * 60, 26, { color: C.boneA(0.5) });
+      const R = rng(112); for (let i = 0; i < 9; i++) minka(c, 110 + i * 26 + R() * 10, 540 + (i % 3) * 22, 30, { seed: i + 400, rim: 0.4, lit: i % 2 ? 0.5 : 0 });
       c.fillStyle = C.boneA(0.85); c.font = '700 24px "Shippori Mincho B1", serif'; c.textAlign = 'left'; c.fillText('黄泉川', 140, 150); c.font = '500 10px "IBM Plex Sans", sans-serif'; c.fillStyle = C.boneA(0.55); c.fillText('EL VALLE · INICIO DEL VIAJE', 140, 170);
       line(c, roadPts, { w: 3, color: C.boneA(0.3), dash: [6, 7] });
       stops.forEach((s, i) => {
-        if (i === 0) { const pm = '#0a0808'; c.fillStyle = pm; c.fillRect(s.x - 70, s.y - 120, 12, 150); c.fillRect(s.x + 58, s.y - 120, 12, 150); c.beginPath(); c.moveTo(s.x - 110, s.y - 136); c.quadraticCurveTo(s.x, s.y - 128, s.x + 110, s.y - 136); c.lineTo(s.x + 104, s.y - 120); c.lineTo(s.x - 104, s.y - 120); c.fill(); c.fillRect(s.x - 82, s.y - 102, 164, 10); c.strokeStyle = 'rgba(200,24,34,0.7)'; c.lineWidth = 1.5; c.strokeRect(s.x - 70, s.y - 120, 12, 150); c.strokeRect(s.x + 58, s.y - 120, 12, 150); stamp(c, creatureSprite('yokai'), s.x, s.y - 10, 1.4); }
-        if (i === 1) { const pk = new Path2D(); pk.moveTo(s.x - 260, s.y + 60); pk.quadraticCurveTo(s.x - 80, s.y - 60, s.x, s.y - 190); pk.quadraticCurveTo(s.x + 90, s.y - 50, s.x + 270, s.y + 60); pk.closePath(); const mg = c.createLinearGradient(0, s.y - 190, 0, s.y + 60); mg.addColorStop(0, 'rgba(195,191,185,0.32)'); mg.addColorStop(1, 'rgba(195,191,185,0.04)'); c.fillStyle = mg; c.fill(pk); c.strokeStyle = C.boneA(0.55); c.lineWidth = 2; c.stroke(pk); c.fillStyle = 'rgba(240,236,230,0.88)'; c.beginPath(); c.moveTo(s.x - 52, s.y - 118); c.quadraticCurveTo(s.x - 20, s.y - 160, s.x, s.y - 190); c.quadraticCurveTo(s.x + 24, s.y - 150, s.x + 60, s.y - 112); c.lineTo(s.x + 30, s.y - 124); c.lineTo(s.x + 6, s.y - 108); c.lineTo(s.x - 22, s.y - 126); c.closePath(); c.fill(); figure(c, s.x + 80, s.y + 40, 80, { who: 'father', dir: -1, color: 'rgba(8,6,6,0.92)', rim: C.boneA(0.45) }); c.fillStyle = '#b3121b'; c.beginPath(); c.moveTo(s.x + 88, s.y - 26); c.lineTo(s.x + 104, s.y - 22); c.lineTo(s.x + 88, s.y - 19); c.fill(); }
-        if (i === 2) { brush(c, [[s.x - 220, s.y + 20], [s.x - 60, s.y - 10], [s.x + 80, s.y + 30], [s.x + 230, s.y]], { w: 40, color: 'rgba(8,6,6,0.9)', dry: 0.7, profile: 'taper', seed: 121, n: 50 }); for (let k = 0; k < 14; k++) { c.fillStyle = C.boneA(0.3 + R() * 0.3); c.beginPath(); c.ellipse(s.x - 200 + R() * 400, s.y + R() * 30, 6 + R() * 8, 4 + R() * 4, 0, 0, 7); c.fill(); } stamp(c, creatureSprite('kappa'), s.x + 20, s.y - 26, 1.6); }
-        if (i === 3) { house(c, s.x, s.y + 40, 170, { color: C.boneA(0.55) }); c.strokeStyle = C.boneA(0.4); c.lineWidth = 3; c.beginPath(); c.moveTo(s.x - 60, s.y - 52); c.lineTo(s.x + 30, s.y - 20); c.stroke(); c.fillStyle = 'rgba(10,8,8,0.95)'; c.beginPath(); c.ellipse(s.x + 116, s.y + 30, 20, 13, 0, 0, 7); c.fill(); c.beginPath(); c.moveTo(s.x + 102, s.y + 22); c.lineTo(s.x + 104, s.y + 6); c.lineTo(s.x + 112, s.y + 20); c.moveTo(s.x + 120, s.y + 20); c.lineTo(s.x + 128, s.y + 6); c.lineTo(s.x + 130, s.y + 22); c.fill(); brush(c, [[s.x + 134, s.y + 34], [s.x + 150, s.y + 20], [s.x + 146, s.y + 4]], { w: 4, color: 'rgba(10,8,8,0.95)', profile: 'start', dry: 0, seed: 3, n: 8 }); c.fillStyle = '#e0303a'; c.fillRect(s.x + 108, s.y + 26, 3, 2); c.fillRect(s.x + 120, s.y + 26, 3, 2); }
+        if (i === 0) { // templo abandonado: torii, santuario, faroles y la kitsune
+          pine(c, s.x - 200, s.y + 70, 190, { seed: 201, rim: 0.4 }); pine(c, s.x + 210, s.y + 70, 160, { seed: 202, rim: 0.4 });
+          minka(c, s.x + 70, s.y + 40, 150, { roof: 'tile', seed: 203, rim: 0.45 }); torii(c, s.x - 70, s.y + 70, 190, { rim: 0.5 });
+          lantern(c, s.x - 150, s.y + 70, 60, { rim: 0.45 }); lantern(c, s.x + 160, s.y + 70, 60, { lit: 0.6 });
+          fox(c, s.x + 10, s.y + 66, 1.15); }
+        if (i === 1) { // montaña nevada y el tengu
+          const pk = new Path2D(); pk.moveTo(s.x - 280, s.y + 70); pk.quadraticCurveTo(s.x - 90, s.y - 60, s.x, s.y - 200); pk.quadraticCurveTo(s.x + 90, s.y - 60, s.x + 290, s.y + 70); pk.closePath(); const mg = c.createLinearGradient(0, s.y - 200, 0, s.y + 70); mg.addColorStop(0, 'rgba(195,191,185,0.32)'); mg.addColorStop(1, 'rgba(195,191,185,0.04)'); c.fillStyle = mg; c.fill(pk); c.strokeStyle = C.boneA(0.55); c.lineWidth = 2; c.stroke(pk);
+          c.fillStyle = 'rgba(240,236,230,0.88)'; c.beginPath(); c.moveTo(s.x - 56, s.y - 126); c.quadraticCurveTo(s.x - 22, s.y - 168, s.x, s.y - 200); c.quadraticCurveTo(s.x + 26, s.y - 160, s.x + 64, s.y - 120); c.lineTo(s.x + 34, s.y - 132); c.lineTo(s.x + 8, s.y - 114); c.lineTo(s.x - 22, s.y - 134); c.closePath(); c.fill();
+          for (const [x, h] of [[-230, 120], [-170, 90], [190, 110], [250, 140]]) pine(c, s.x + x, s.y + 74, h, { seed: 210 + x, snow: 1, rim: 0.4 });
+          tengu(c, s.x + 70, s.y + 52, 96); }
+        if (i === 2) { // río seco: lecho de piedras y el kappa
+          brush(c, [[s.x - 240, s.y + 30], [s.x - 60, s.y], [s.x + 80, s.y + 40], [s.x + 250, s.y + 10]], { w: 48, color: 'rgba(8,6,6,0.9)', dry: 0.7, profile: 'taper', seed: 121, n: 50 });
+          for (let k = 0; k < 26; k++) { const x = s.x - 220 + R() * 440, y = s.y + R() * 40, r = 4 + R() * 9; c.fillStyle = '#1a1514'; c.beginPath(); c.ellipse(x, y, r * 1.3, r * 0.7, 0, 0, 7); c.fill(); c.strokeStyle = C.boneA(0.35); c.lineWidth = 0.7; c.beginPath(); c.ellipse(x, y, r * 1.3, r * 0.7, 0, Math.PI * 1.1, Math.PI * 1.9); c.stroke(); }
+          reeds(c, s.x - 270, s.x - 120, s.y + 70, 70, { seed: 220, n: 26, alpha: 0.45 }); reeds(c, s.x + 140, s.x + 280, s.y + 70, 70, { seed: 221, n: 26, alpha: 0.45 });
+          pine(c, s.x + 230, s.y + 40, 130, { seed: 222, rim: 0.4 });
+          c.save(); c.translate(s.x - 40, s.y - 92); c.scale(0.95, 0.95); drawBeast(c, 'kappa'); c.restore(); }
+        if (i === 3) { // taberna en ruinas y el bakeneko
+          minka(c, s.x - 10, s.y + 60, 230, { roof: 'tile', seed: 230, lit: 0.8, rim: 0.45 });
+          c.fillStyle = 'rgba(8,6,6,0.9)'; c.beginPath(); c.moveTo(s.x - 60, s.y - 46); c.lineTo(s.x + 10, s.y - 24); c.lineTo(s.x - 30, s.y - 10); c.closePath(); c.fill(); // agujero del techo
+          c.fillStyle = '#8e1a22'; c.fillRect(s.x - 46, s.y - 6, 60, 22); c.strokeStyle = C.boneA(0.3); for (let k = 1; k < 4; k++) { c.beginPath(); c.moveTo(s.x - 46 + k * 15, s.y - 6); c.lineTo(s.x - 46 + k * 15, s.y + 16); c.stroke(); } // noren
+          lantern(c, s.x + 150, s.y + 60, 58, { lit: 0.9 }); pine(c, s.x - 200, s.y + 62, 150, { seed: 231, rim: 0.4 });
+          cat(c, s.x + 92, s.y + 52, 1.3); }
         callout(c, [s.x, s.y - 150], [s.x + 40, 128], `${s.kanji}  ${s.who}`, { size: 18, sub: s.name });
       });
       c.fillStyle = C.boneA(0.6); c.font = '500 11px "IBM Plex Sans", sans-serif'; c.textAlign = 'right'; c.fillText('…Y EL VIAJE SIGUE', RW - 60, 620);
@@ -366,9 +479,13 @@ export function defineViews(stage, { onBestia }) {
   stage.define('invierno', {
     layers: [
       bg([600, 200, 720, 'rgba(74,70,68,0.5)']),
-      { depth: 0.1, paint: (ctx, L) => art(ctx, L, (c) => { mountains(c, { x0: -300, x1: 1300, base: 440, amp: 110, color: 'rgba(230,226,220,0.12)', fade: 60, seed: 131, rim: 0.4 }); }) },
-      { depth: 0.25, paint: (ctx, L) => { ctx.fillStyle = 'rgba(205,200,193,0.12)'; ctx.fillRect(-80, L.Y(510), L.w + 160, L.h); art(ctx, L, (c) => { const R = rng(132); for (let i = 0; i < 30; i++) { const x = -200 + R() * 1400, y = 480 + R() * 60, h = 50 + R() * 70; c.fillStyle = 'rgba(8,6,6,0.88)'; c.beginPath(); c.moveTo(x, y - h); c.lineTo(x - h * 0.28, y); c.lineTo(x + h * 0.28, y); c.closePath(); c.fill(); c.fillStyle = 'rgba(230,226,220,0.55)'; c.beginPath(); c.moveTo(x, y - h); c.lineTo(x - h * 0.1, y - h * 0.65); c.lineTo(x + h * 0.1, y - h * 0.65); c.fill(); }
-        for (let i = 0; i < 5; i++) house(c, 810 + i * 48, 530 + (i % 2) * 10, 44, { color: C.boneA(0.45) }); }); } },
+      { depth: 0.1, paint: (ctx, L) => art(ctx, L, (c) => { moon(c, 220, 110, 20, { a: 0.6 }); range(c, { x0: -300, x1: 1300, base: 380, amp: 120, color: 'rgba(230,226,220,0.08)', fade: 60, seed: 130, rim: 0.3, texture: 0.6 }); range(c, { x0: -300, x1: 1300, base: 440, amp: 110, color: 'rgba(230,226,220,0.13)', fade: 60, seed: 131, rim: 0.45, texture: 0.8 }); mistBand(c, -200, 1200, 470, 30, 0.14, 13); }) },
+      { depth: 0.25, paint: (ctx, L) => { ctx.fillStyle = 'rgba(205,200,193,0.12)'; ctx.fillRect(-80, L.Y(510), L.w + 160, L.h); art(ctx, L, (c) => { const R = rng(132);
+        for (let i = 0; i < 16; i++) { const x = -200 + R() * 1400, y = 500 + R() * 40; if (x > 760 && x < 1040) continue; pine(c, x, y, 70 + R() * 90, { seed: 132 + i, snow: 1, rim: 0.35 }); }
+        // la aldea del invierno: casas nevadas (algunas ya arden)
+        for (let i = 0; i < 5; i++) minka(c, 810 + i * 48, 530 + (i % 2) * 10, 46, { seed: 140 + i, snow: 1, lit: i === 3 ? 0.7 : 0, rim: 0.4 });
+        // nieve en el suelo: huellas
+        for (let k = 0; k < 40; k++) { c.fillStyle = 'rgba(10,8,8,0.25)'; c.beginPath(); c.ellipse(200 + k * 14 + (k % 2) * 4, 664 + (k % 2) * 6, 3, 1.6, 0, 0, 7); c.fill(); } }); } },
       { depth: 0.5, paint: (ctx, L) => art(ctx, L, (c) => { chartCard(c, 470, 60, 510, 330, 'La marca contra los recuerdos', 'Gráfico de líneas · % según la edad de Kenji'); for (const a of [13, 15, 18, 20, 22]) axisLabel(c, `${a} años`, CX(a), CY(0) + 20); line(c, [[CX(13), CY(0)], [CX(22.6), CY(0)]], { alpha: 0.35 }); line(c, [[CX(13), CY(100)], [CX(22.6), CY(100)]], { alpha: 0.12, dash: [2, 5] }); axisLabel(c, '100', CX(13) - 10, CY(100) + 3, 'right'); axisLabel(c, '0', CX(13) - 10, CY(0) + 3, 'right'); }) },
     ],
     dyn(ctx, L, st) {
@@ -480,7 +597,7 @@ export function defineSchema(stage) {
 export function paintPanel(i, cv) {
   const c = cv.ctx, w = cv.w, h = cv.h;
   paper(c, w, h, { glowAt: [w / 2, h * 0.55, h * 0.6, 'rgba(84,68,64,0.6)'], vignette: 0.6 });
-  if (i === 0) { const R = rng(3); for (let k = 0; k < 10; k++) bamboo(c, R() * w, -20, h + 20, 4 + R() * 4, { alpha: 0.16, seed: k + 3 }); lily(c, w / 2, h * 0.5, Math.min(w / 160, 1.6), { stem: h * 0.3 }); }
-  if (i === 1) { weaponAt(c, w * 0.44, h * 0.5, Math.min(w / 260, 1.05), -0.25); }
-  if (i === 2) { c.fillStyle = 'rgba(205,200,193,0.12)'; c.fillRect(0, h * 0.72, w, h); mountains(c, { x0: 0, x1: w, base: h * 0.7, amp: h * 0.12, color: 'rgba(230,226,220,0.14)', fade: 40, seed: 5, rim: 0.4 }); figure(c, w * 0.52, h * 0.86, h * 0.3, { pose: 'walk', dir: -1, mark: true, rim: C.boneA(0.55) }); }
+  if (i === 0) { const R = rng(3); for (let k = 0; k < 10; k++) bamboo(c, R() * w, -20, h + 20, 4 + R() * 4, { alpha: 0.16, seed: k + 3 }); for (let k = 0; k < 4; k++) grave(c, w * 0.12 + k * w * 0.1, h * 0.86, h * 0.07, { seed: k + 5, rim: 0.3 }); lilyField(c, 0, w, h * 0.8, h * 0.95, { seed: 4, n: 30, size: h * 0.006 }); lily(c, w / 2, h * 0.5, Math.min(w / 160, 1.6), { stem: h * 0.3 }); }
+  if (i === 1) { for (const [x, ww] of [[0.15, 0.45], [0.6, 0.5], [1, 0.4]]) minka(c, w * x, h * 0.92, w * ww, { seed: x * 10 | 0, burn: 1, rim: 0.25 }); const g = c.createLinearGradient(0, h * 0.6, 0, h); g.addColorStop(0, 'rgba(200,30,30,0)'); g.addColorStop(1, 'rgba(200,30,30,0.25)'); c.fillStyle = g; c.fillRect(0, h * 0.6, w, h * 0.4); weaponAt(c, w * 0.44, h * 0.5, Math.min(w / 260, 1.05), -0.25); }
+  if (i === 2) { moon(c, w * 0.75, h * 0.16, w * 0.05, { a: 0.6 }); c.fillStyle = 'rgba(205,200,193,0.12)'; c.fillRect(0, h * 0.72, w, h); range(c, { x0: 0, x1: w, base: h * 0.7, amp: h * 0.12, color: 'rgba(230,226,220,0.14)', fade: 40, seed: 5, rim: 0.4, texture: 0.6 }); pine(c, w * 0.12, h * 0.76, h * 0.13, { seed: 3, snow: 1 }); pine(c, w * 0.9, h * 0.76, h * 0.11, { seed: 4, snow: 1 }); minka(c, w * 0.74, h * 0.75, w * 0.24, { snow: 1, seed: 6, lit: 0.6 }); figure(c, w * 0.46, h * 0.9, h * 0.2, { pose: 'walk', dir: -1, mark: true, rim: C.boneA(0.55) }); }
 }
