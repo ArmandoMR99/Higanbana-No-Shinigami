@@ -191,6 +191,8 @@ addEventListener('keydown', (e) => {
 });
 document.getElementById('btn-esc').addEventListener('click', toMenu);
 document.getElementById('btn-bestias').addEventListener('click', () => showBestia('dragon'));
+// tocar fuera de la ficha la cierra (salvo que se toque otro barrio o bestia, que la reemplaza)
+document.addEventListener('pointerdown', (e) => { if (cardOpen() && !e.target.closest('#card, .map-hit, .tag-btn, #btn-bestias')) hideCard(); }, true);
 const soundBtn = document.getElementById('btn-sound');
 soundBtn.addEventListener('click', (e) => { e.stopPropagation(); const on = music.toggle(); soundBtn.classList.toggle('off', !on); soundBtn.title = on ? 'Silenciar' : 'Activar sonido'; try { localStorage.setItem('hns-sound', on ? 'on' : 'off'); } catch (err) {} });
 // sobre el proyecto
@@ -284,7 +286,7 @@ function loop() {
   } else {
     reader.update(dt);
     const S = reader.sections, i = reader.i, t = reader.t;
-    if (arrive.i !== i || arrive.ch !== chapter) { arrive.i = i; arrive.ch = chapter; arrive.time = time; firedCues.clear(); }
+    if (arrive.i !== i || arrive.ch !== chapter) { arrive.i = i; arrive.ch = chapter; arrive.time = time; firedCues.clear(); if (cardOpen()) hideCard(); } // la ficha se cierra al cambiar de pasaje
     const tp = clamp((time - arrive.time - 0.35) / 4.2); // animación que se reproduce sola al llegar al pasaje
     const tpSlow = clamp((time - arrive.time - 0.35) / 10); // para las escenas con más datos (ficha botánica, esquema)
     const tgt = Math.round(reader.target);

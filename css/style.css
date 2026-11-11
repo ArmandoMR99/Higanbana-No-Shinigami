@@ -244,13 +244,20 @@ body.ch-2 #btn-bestias { display: block; }
 /* ---------- Tarjeta (ema / ficha) ---------- */
 #card {
   position: fixed; z-index: 30; right: 6vw; top: 50%; transform: translateY(-50%); width: min(340px, 86vw);
-  padding: 2rem 1.6rem 1.6rem; color: #2a201d; font-family: var(--f-read);
-  background: linear-gradient(180deg, #cdb79a, #b89c7a); clip-path: polygon(50% 0, 100% 14%, 100% 100%, 0 100%, 0 14%);
+  padding: 4.6rem 1.7rem 1.7rem; color: #2a201d; font-family: var(--f-read);
+  background: linear-gradient(180deg, #cdb79a, #b89c7a); clip-path: polygon(50% 0, 100% 2.8rem, 100% 100%, 0 100%, 0 2.8rem);
   box-shadow: 0 30px 80px rgba(0,0,0,.6); animation: cardin .5s var(--ease);
 }
-#card.bestia { clip-path: none; background: linear-gradient(180deg, #1c1615, #120e0e); color: var(--bone); border: 1px solid rgba(154,31,40,.6); }
+#card.bestia { clip-path: none; padding-top: 3.2rem; background: linear-gradient(180deg, #1c1615, #120e0e); color: var(--bone); border: 1px solid rgba(154,31,40,.6); }
+/* agujero del cordón de la ema */
+#card:not(.bestia)::before { content: ''; position: absolute; left: 50%; top: 1.5rem; width: 10px; height: 10px; margin-left: -5px; border-radius: 50%; background: #3a2a24; box-shadow: inset 0 1px 2px rgba(0,0,0,.6); }
 @keyframes cardin { from { opacity: 0; transform: translateY(-46%); } }
-.card-close { position: absolute; top: 1.6rem; right: .9rem; font-size: 1.3rem; line-height: 1; color: inherit; opacity: .6; }
+.card-close { position: absolute; z-index: 2; top: 3.2rem; right: .9rem; width: 34px; height: 34px; display: grid; place-items: center; padding: 0; font-size: 1.35rem; line-height: 1; color: inherit; opacity: .7; border: 1px solid currentColor; border-radius: 50%; transition: opacity .25s, background .25s; }
+.card-close:hover { opacity: 1; background: rgba(0,0,0,.08); }
+#card.bestia .card-close { top: .8rem; right: .8rem; border-color: rgba(195,191,185,.35); }
+#card.bestia .card-close:hover { border-color: var(--glow); background: rgba(224,48,58,.12); }
+.card-body { overflow-wrap: break-word; }
+.card-body .m { padding-right: 2.6rem; }
 .card-body .k { font-family: var(--f-title); font-size: 2.2rem; font-weight: 800; letter-spacing: .1em; margin-top: .6rem; }
 .card-body .n { font-size: 1.15rem; margin: .2rem 0; }
 .card-body .m { font-family: var(--f-data); font-size: .7rem; letter-spacing: .15em; text-transform: uppercase; opacity: .7; }
@@ -288,7 +295,7 @@ body.ch-2 #btn-bestias { display: block; }
 }
 
 .card-body .portrait { display: block; width: 100%; max-height: 190px; object-fit: contain; margin: .6rem 0 -.4rem; filter: drop-shadow(0 6px 18px rgba(0,0,0,.6)); }
-#card { max-height: 88vh; overflow-y: auto; }
+#card { max-height: calc(100vh - 150px); overflow-y: auto; overscroll-behavior: contain; }
 
 /* ---------- Pantalla de carga ---------- */
 #loader { position: fixed; inset: 0; z-index: 200; display: grid; place-items: center; align-content: center; gap: 1.2rem; background: var(--ink); transition: opacity 1.2s var(--ease), visibility 0s 1.2s; }
